@@ -10,7 +10,7 @@
     </body>
     <script>
         if (window.location.hash) {
-            document.getElementById("token").innerHTML = window.location.hash.substring(x.indexOf("="));
+            document.getElementById("token").innerHTML = window.location.hash.substring(window.location.hash.indexOf("="));
             copy(document.getElementById("token").innerHTML);
         }
     </script>
