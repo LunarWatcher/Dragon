@@ -9,7 +9,7 @@
     </body>
     <script>
         if (window.location.hash) {
-            document.getElementById("token").innerHTML = window.location.hash;
+            document.getElementById("token").innerHTML = window.location.hash.substring(1);
         }
     </script>
 </html>
