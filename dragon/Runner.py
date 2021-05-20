@@ -1,7 +1,9 @@
 import os
 from sys import platform
 
-import stackapi as API
+import html
+
+from stackapi import StackAPI
 
 # Static validation {{{
 if platform != "linux":
@@ -15,6 +17,7 @@ CLIENT_ID = "20280"
 API_TOKEN = "qXwVVNIDCIX7LpUEoDHIpA(("
 
 OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
+API_FILTER = "!nL_HTxMBi6"
 # }}}
 
 # Token management {{{
@@ -38,8 +41,27 @@ if (oauthToken == ""):
     print("Failed to find a token")
     exit(-2)
 # }}}
-# Token verification {{{
-print("OAuth token loaded. Testing a dry run against the API...")
+# Init API interface {{{
+print("OAuth token loaded. Assuming valid...")
+SO = StackAPI('meta', access_token=oauthToken, key=API_TOKEN)
+SO.page_size = 100
 
 # }}}
+# Utility API {{{
+
+def cleanHTMLEntities(rawString: str):
+    return html.unescape(rawString)
+
+def edit(answerID, newBody, comment):
+    SO.send_data("answers/{}/edit".format(answerID), body=newBody, comment=comment)
+
+def getAnswers(page = 1):
+    return SO.fetch("answers", page=page, filter=API_FILTER)
+
+# }}}
+# Test code for editing
+# body = html.unescape(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])
+# body += "\n\nThis is an edit from the API"
+# print(body)
+# SO.send_data("answers/364602/edit", body=body, comment="Testing API edits")
 
