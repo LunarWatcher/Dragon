@@ -1,0 +1,15 @@
+<html>
+    <head>
+        <title>Token echo</title>
+    </head>
+    <body>
+        <h1>Token echo</h1>
+        <p>For obvious reasons, keep your token secret. (This page is purely an echo page, and doesn't store any information about the token, unless GitHub silently records this data from web requests or something). Copy it or it'll be lost.</p>
+        <p id="token">Token not received yet...</p>        
+    </body>
+    <script>
+        if (window.location.hash) {
+            document.getElementById("token").innerHTML = window.location.hash;
+        }
+    </script>
+</html>
