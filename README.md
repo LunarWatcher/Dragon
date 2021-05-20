@@ -11,5 +11,6 @@
 
 ## OAuth
 
-Because Dragon requires write access, it has to use the client-side OAuth flow. 
+Because Dragon requires write access, it has to use the client-side OAuth flow. It's set up to redirect to [a simple page](https://lunarwatcher.github.io/Dragon/token_echo.html) ([source code](https://github.com/LunarWatcher/Dragon/blob/master/docs/token_echo.html)) that echos and copies the token. The page itself doesn't save your token (or, as the page source also says, I don't save it. I have no idea if GitHub saves URLs for security purposes) - copy it, or it'll be lost
 
+You can save this token into `.oauth.txt` manually, or paste it into the program when prompted. If you use container tabs, the URL is also explicitly printed so it's copy-pastable.

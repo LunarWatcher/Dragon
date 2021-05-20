@@ -21,8 +21,9 @@ OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
 oauthToken = ""
 
 if not os.path.isfile(".oauth.txt"):
-    oauthURL = f"https://stackoverflow.com/oauth/dialog?client_id={CLIENT_ID}\&scope=write_access,no_expiry\&redirect_uri={OAUTH_VERIFICATION_URL}"
+    oauthURL = f"https://stackoverflow.com/oauth/dialog?client_id={CLIENT_ID}&scope=write_access,no_expiry&redirect_uri={OAUTH_VERIFICATION_URL}"
     print("Opening", oauthURL)
+    oauthURL = oauthURL.replace("&", "\&")
     os.system(f"xdg-open {oauthURL}")
     print("Client-side OAuth flow launched")
     oauthToken = input("Paste your token here: ")
