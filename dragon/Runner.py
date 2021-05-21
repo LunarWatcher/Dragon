@@ -4,6 +4,7 @@ from sys import platform
 import html
 import re
 import Filters
+from ManualMode import checkAnswer
 
 from stackapi import StackAPI
 
@@ -54,8 +55,12 @@ SO.page_size = 100
 def cleanHTMLEntities(rawString: str):
     return html.unescape(rawString).replace("\r", "")
 
+
+def exportStrip(rawString: str):
+    return re.sub(r"\n{3,}", "\n\n", rawString)
+
 def export(rawString: str):
-    return re.sub(r"\n{3,}", "\n\n", rawString).replace("\n", "\r\n")
+    return exportStrip(rawString).replace("\n", "\r\n")
 
 def edit(answerID, newBody, comment):
     SO.send_data("answers/{}/edit".format(answerID), body=newBody, comment=comment)
@@ -66,6 +71,8 @@ def getAnswers(page = 1):
 # }}}
 
 def processAnswer(body, answerID):
+    old = body
+
     hasAltered: bool = False
     for filter in Filters.getFiltersBecausePythonIsDumbAndCantExportBasicArraysWithoutRequiringGoatSacrifices():
         (newBody, processed) = filter(body)
@@ -73,7 +80,7 @@ def processAnswer(body, answerID):
             body = newBody
             hasAltered = True
 
-    if hasAltered:
+    if hasAltered and checkAnswer(old, exportStrip(body), answerID):
         SO.send_data(f"answers/{answerID}/edit", body=export(body), comment="Automated edit")
 
 
