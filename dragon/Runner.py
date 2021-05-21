@@ -78,7 +78,7 @@ def processAnswer(body, answerID):
     print(export(body))
 
 # Test code for editing
-body = cleanHTMLEntities(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])
-processAnswer(body, "364602")
+# body = cleanHTMLEntities(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])
+# processAnswer(body, "364602")
 # print(body)
 # SO.send_data("answers/364602/edit", body=body, comment="Testing API edits")
