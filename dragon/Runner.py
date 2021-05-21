@@ -75,7 +75,8 @@ def processAnswer(body, answerID):
 
     if hasAltered:
         SO.send_data(f"answers/{answerID}/edit", body=export(body), comment="Automated edit")
-    print(export(body))
+
+
 
 # Test code for editing
 # body = cleanHTMLEntities(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])

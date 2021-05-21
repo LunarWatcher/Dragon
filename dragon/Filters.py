@@ -18,7 +18,7 @@ def purgeGitMemory(body: str):
 
 filters = [
     noThanks,
-    purgeGitMemory
+    purgeGitMemory,
 ]
 
 def getFiltersBecausePythonIsDumbAndCantExportBasicArraysWithoutRequiringGoatSacrifices():
