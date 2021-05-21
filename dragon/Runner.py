@@ -13,7 +13,6 @@ if platform != "linux":
     print(platform, "isn't supported")
     exit(-1)
 # }}}
-
 # Static {{{
 CLIENT_ID = "20280"
 # This token isn't considered a secret by the API
@@ -22,7 +21,6 @@ API_TOKEN = "qXwVVNIDCIX7LpUEoDHIpA(("
 OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
 API_FILTER = "!nL_HTxMBi6"
 # }}}
-
 # Token management {{{
 oauthToken = ""
 
@@ -48,6 +46,16 @@ if (oauthToken == ""):
 print("OAuth token loaded. Assuming valid...")
 SO = StackAPI('meta', access_token=oauthToken, key=API_TOKEN)
 SO.page_size = 100
+
+# User validation {{{
+user = SO.fetch("me")["items"][0]
+if (user["reputation"] < 2000 and user["is_employee"] == False and user["user_type"] != "moderator"):
+    print("You don't have enough reputation to use this tool")
+    exit(-1)
+elif user["user_type"] not in ["registered", "moderator"]:
+    print("This tool doesn't allow unregistered users.")
+    exit(-1)
+# }}}
 
 # }}}
 # Utility API {{{
