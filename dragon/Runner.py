@@ -82,7 +82,7 @@ def processAnswer(body, answerID):
     old = body
 
     hasAltered: bool = False
-    for filter in Filters.getFiltersBecausePythonIsDumbAndCantExportBasicArraysWithoutRequiringGoatSacrifices():
+    for filter in Filters.filters:
         (newBody, processed) = filter(body)
         if (processed):
             body = newBody
@@ -94,7 +94,7 @@ def processAnswer(body, answerID):
 
 
 # Test code for editing
-# body = cleanHTMLEntities(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])
-# processAnswer(body, "364602")
-# print(body)
+body = cleanHTMLEntities(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])
+processAnswer(body, "364602")
+print(body)
 # SO.send_data("answers/364602/edit", body=body, comment="Testing API edits")

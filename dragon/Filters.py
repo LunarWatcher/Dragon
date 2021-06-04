@@ -36,6 +36,3 @@ filters = [
     noHelp,
     purgeGitMemory,
 ]
-
-def getFiltersBecausePythonIsDumbAndCantExportBasicArraysWithoutRequiringGoatSacrifices():
-    return filters
