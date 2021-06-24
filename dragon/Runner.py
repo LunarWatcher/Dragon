@@ -83,7 +83,7 @@ def processPost(post: Post):
             hasAltered = True
 
     if hasAltered and checkQuestion(post):
-        post.publishUpdates(SO, "Dragon:: Test edit (noise reduction)")
+        post.publishUpdates(SO, "Dragon::Supervised edit")
 
 # Test code for editing
 post = Post(SO.fetch("questions/68122810", filter = QUESTION_FILTER)["items"][0])
