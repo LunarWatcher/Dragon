@@ -86,5 +86,5 @@ def processPost(post: Post):
         post.publishUpdates(SO, "Dragon:: Test edit (noise reduction)")
 
 # Test code for editing
-post = Post(SO.fetch("questions/68116901", filter = QUESTION_FILTER)["items"][0])
+post = Post(SO.fetch("questions/68122810", filter = QUESTION_FILTER)["items"][0])
 processPost(post)

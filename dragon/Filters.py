@@ -2,15 +2,20 @@ import re
 
 from Post import *
 
+ALL_ADVANCE = "(?:advance|advancing|advantage)"
+
 # Plain, body-only, context-free changes {{{
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| )(thanks?|tanks)( ?(you )? (a lot\s*|in (advance|advantage|advancing)\s*)+)?.?\s*$",
+        "(?i)(^| )(thanks?|tanks)( ?(you )? "
+        + "(a lot\s*|"
+            + "in " + ALL_ADVANCE + "\s*(?:for any [a-z0-9,\\- /]+(?:.|$))?"
+        + ")+)?.?\s*$",
         "\n",
         post.body,
         flags = re.MULTILINE)
-    return count != 0
+    return count
 
 def noGreetings(post: Post):
     (post.body, count) = re.subn(
@@ -19,18 +24,39 @@ def noGreetings(post: Post):
         post.body,
         flags = re.MULTILINE
     )
-    return count != 0
+    return count
 
 def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:"
             + "happy coding\W*|"
-            + "((kind(?:est)|best)?\s*regards,\n\n.{,40})" # TODO: harden
+            + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
         + ")",
         "",
         post.body
     )
-    return count != 0
+    return count
+
+def unnecessaryApologies(post: Post):
+    (post.body, count) = re.subn(
+        # Start by dealing with the leading fragment
+        "(?i)(i'?m?\s*(am)?\s*)?(?:"
+            + "sorry|apologi[zse]{2}\s*(in " + ALL_ADVANCE + ")?"
+        + ")"
+        #  Then we worry about the bit that comes after it, if there is anything
+        + "("
+            + "for [a-z0-9/-]{,40}" # Handle short fragments in the same sentence
+        + ")?"
+        # End the match at a punctuation, to make sure "Apologies in advance, I'm not blah blah blah" doesn't leave ", I'm not blah ..."
+        # as a stub.
+        # This is potentially only relevant in some cases, so we allow matching nothing as well.
+        # This might need hardening
+        + "([.,?!]*|$)",
+        "",
+        post.body,
+        flags = re.MULTILINE
+    )
+    return count
 
 def noHelp(post: Post):
     (post.body, count) = re.subn(
@@ -39,7 +65,7 @@ def noHelp(post: Post):
         post.body,
         flags = re.MULTILINE
     )
-    return count != 0
+    return count
 
 # People need to learn to link directly to the source :rolling_eyes:
 def purgeGitMemory(post: Post):
@@ -48,7 +74,7 @@ def purgeGitMemory(post: Post):
         r"https://github.com/\1/issues/\2#issuecomment-\3",
         post.body
     )
-    return count != 0
+    return count
 # }}}
 # Contextual body edits {{{
 # }}}
@@ -64,15 +90,19 @@ def expandCode(post: Post):
         post.body,
         flags = re.MULTILINE
     )
-    return count != 0
+    return count
 # }}}
 
 filters = [
+    # This one needs priority over regular "thanks"
+    # to properly erase "thanks,\n\nMyName"
+    eraseSalutations,
+
     noThanks,
     noGreetings,
-    eraseSalutations,
     noHelp,
     purgeGitMemory,
+    unnecessaryApologies,
 
     expandCode,
 ]
