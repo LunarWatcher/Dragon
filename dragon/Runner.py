@@ -3,8 +3,12 @@ from sys import platform
 
 import html
 import re
+
 import Filters
-from ManualMode import checkAnswer
+import Utils
+
+from ManualMode import *
+from Post import *
 
 from stackapi import StackAPI
 
@@ -19,7 +23,12 @@ CLIENT_ID = "20280"
 API_TOKEN = "qXwVVNIDCIX7LpUEoDHIpA(("
 
 OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
-API_FILTER = "!nL_HTxMBi6"
+# Endpoint filters {{{
+# Filter for the /questions endpoint
+QUESTION_FILTER = "!0WEuRgJEfkinT8j_w)24DURiZ"
+# Filter for the /answers endpoint
+ANSWER_FILTER   = "!nL_HTxMBi6"
+# }}}
 # }}}
 # Token management {{{
 oauthToken = ""
@@ -43,14 +52,20 @@ if (oauthToken == ""):
     exit(-2)
 # }}}
 # Init API interface {{{
-print("OAuth token loaded. Assuming valid...")
-SO = StackAPI('meta', access_token=oauthToken, key=API_TOKEN)
+print("OAuth token loaded.")
+SO = StackAPI('stackoverflow', access_token=oauthToken, key=API_TOKEN)
 SO.page_size = 100
 
 # User validation {{{
 user = SO.fetch("me")["items"][0]
+# This 2k requirement blocks access for editing on beta sites or sites where the privilege for whatever
+# reason isn't earned at 2k, but at some other milestone.
+# The editing privilege is to make sure the review queues aren't flooded with automated edits that
+# may or may not be very, very minor.
+# Also, accounting for <2k users means there have to be additional checks to make sure
+# the edit is big enough to be allowed.
 if (user["reputation"] < 2000 and user["is_employee"] == False and user["user_type"] != "moderator"):
-    print("You don't have enough reputation to use this tool")
+    print("You don't have enough reputation to use this tool - 2k is required.")
     exit(-1)
 elif user["user_type"] not in ["registered", "moderator"]:
     print("This tool doesn't allow unregistered users.")
@@ -58,43 +73,18 @@ elif user["user_type"] not in ["registered", "moderator"]:
 # }}}
 
 # }}}
-# Utility API {{{
 
-def cleanHTMLEntities(rawString: str):
-    return html.unescape(rawString).replace("\r", "")
-
-
-def exportStrip(rawString: str):
-    return re.sub(r"\n{3,}", "\n\n", rawString)
-
-def export(rawString: str):
-    return exportStrip(rawString).replace("\n", "\r\n")
-
-def edit(answerID, newBody, comment):
-    SO.send_data("answers/{}/edit".format(answerID), body=newBody, comment=comment)
-
-def getAnswers(page = 1):
-    return SO.fetch("answers", page=page, filter=API_FILTER)
-
-# }}}
-
-def processAnswer(body, answerID):
-    old = body
-
+def processPost(post: Post):
+    # Cache varaible to detect changes
     hasAltered: bool = False
     for filter in Filters.filters:
-        (newBody, processed) = filter(body)
-        if (processed):
-            body = newBody
+        result = filter(post)
+        if result:
             hasAltered = True
 
-    if hasAltered and checkAnswer(old, exportStrip(body), answerID):
-        SO.send_data(f"answers/{answerID}/edit", body=export(body), comment="Automated edit")
-
-
+    if hasAltered and checkQuestion(post):
+        post.publishUpdates(SO, "Dragon:: Test edit (noise reduction)")
 
 # Test code for editing
-body = cleanHTMLEntities(SO.fetch("answers/364602", filter=API_FILTER)["items"][0]["body_markdown"])
-processAnswer(body, "364602")
-print(body)
-# SO.send_data("answers/364602/edit", body=body, comment="Testing API edits")
+post = Post(SO.fetch("questions/68116901", filter = QUESTION_FILTER)["items"][0])
+processPost(post)
