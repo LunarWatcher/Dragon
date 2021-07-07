@@ -69,7 +69,7 @@ def unnecessaryApologies(post: Post):
 def noHelp(post: Post):
     (post.body, count) = re.subn(
         "(?i)(please\\W help( me)? ?(asap|urgently)?[.?!]|i? ?"
-        + "(this|need|help|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated.)",
+        + "(this|need|help|much|greatly appreciated|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated.)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -93,6 +93,14 @@ def im(post: Post):
         post.body
     )
     return count
+
+def doesnt(post: Post):
+    (post.body, count) = re.subn(
+        r"(?i)\b(d)oesnt\b",
+        r"\1oesn't",
+        post.body
+    )
+    return count
 # }}}
 # Legal names {{{
 def legalNames(post: Post):
@@ -103,9 +111,12 @@ def legalNames(post: Post):
     # avoid a ton of unnecessary checks, we run all the legal
     # name fixes, _then_ compare the string to notify about
     # edits to the body.
+    # This reduces the amount of string comparisons from len(names)
+    # to 1. Potentially insignificant
     names = {
-        "Stack Overflow": r"\bstack\s*overflow\b",
-        "GitHub": r"\bgit\s*hub\b"
+        "Stack Overflow": r"\bstack[\s-]*overflow\b",
+        "GitHub": r"\bgit[\s-]*hub\b",
+        "React Native": r"\breact[\s-]native\b",
     }
 
     oldBody = post.body
@@ -121,6 +132,28 @@ def legalNames(post: Post):
 # Title edits {{{
 # }}}
 # Tag edits {{{
+# }}}
+# Hybrid edits (questions and answers, but contains bits specific to questions) {{{
+def capitalizeSentences(post: Post):
+    # Internal function that does the replacement to avoid copy-pasta for the body and title.
+    def internalReplace(string):
+        # Gotta love how lambdas are supported.
+        # We need to re-insert the first and third groups to make sure the text isn't
+        # out of place, and then we need to make the second group title-case.
+        # The second group is a single word of length >= 1, but that's guaranteed
+        # to be a single word
+        return re.subn(r"(^|[.?!]\s+)(.+?)( |$)", lambda pat : pat.group(1) + pat.group(2).title() + pat.group(3), string)
+    # We need to strip code blocks, links, and other stuff:tm: before we can capitalize sentences in the question itself.
+    # This is completely irrelevant in the title.
+    # (post.body, count) = internalReplace(post.body)
+    count = 0
+
+    # And we do the same with the title if the post is a question
+    if post.isQuestion():
+        (post.title, titleCount) = internalReplace(post.title)
+        count += titleCount
+
+    return count
 # }}}
 # Style edits{{{
 def expandCode(post: Post):
@@ -143,13 +176,15 @@ filters = [
     noHelp,
     unnecessaryApologies,
     # }}}
-    # Stylistic {{{
+    # Meta {{{
     purgeGitMemory,
     # }}}
-
+    # Stylistic {{{
+    capitalizeSentences,
+    # }}}
     # Grammar {{{
     im,
     # }}}
-
+    legalNames,
     expandCode,
 ]

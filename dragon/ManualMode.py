@@ -17,6 +17,11 @@ def colorDiff(diff):
         else:
             yield line
 
+def checkPost(post: Post):
+    if post.isQuestion():
+        checkQuestion(post)
+    else: checkAnswer(post)
+
 def checkQuestion(post: Post):
     print("Title:")
     for line in colorDiff(DiffEngine([post.oldTitle], [post.title])):

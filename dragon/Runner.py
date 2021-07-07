@@ -25,9 +25,7 @@ API_TOKEN = "qXwVVNIDCIX7LpUEoDHIpA(("
 OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
 # Endpoint filters {{{
 # Filter for the /questions endpoint
-QUESTION_FILTER = "!0WEuRgJEfkinT8j_w)24DURiZ"
-# Filter for the /answers endpoint
-ANSWER_FILTER   = "!nL_HTxMBi6"
+QUESTION_FILTER = "!3xr(P-20tB)GfFE5r"
 # }}}
 # }}}
 # Token management {{{
@@ -101,7 +99,7 @@ def processPost(post: Post):
         if result != 0:
             hasAltered = True
 
-    if hasAltered and checkQuestion(post):
+    if hasAltered and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if response != 0:
@@ -116,11 +114,29 @@ def mainLoop():
         # to the question itself. We leave it up to the cache to determine what
         # needs a new sweep.
         for question in recentQuestions:
+            if "closed_date" in question:
+                # Skip closed questions; editing these are unnecessary
+                # Also causes unnecessary bumping. Might as well try
+                # to reduce what we edit at least a little.
+                continue
+            elif "locked_date" in question:
+                # We cannot edit locked posts, so it's not a question of
+                # whether bumping is worth it or not.
+                continue
             # Convert to a post
             questionPost = Post(question)
             # Then we check the question
             processPost(questionPost)
-            # And then we get and check the answers
+
+            # The answer key isn't present if there are no answers
+            if question["answer_count"] == 0:
+                # So if there's 0, we continue the loop
+                continue
+
+            # Otherwise, we also scan the answers.
+            for answer in question["answers"]:
+                answerPost = Post(answer)
+                processPost(answerPost)
 
 
 mainLoop()
