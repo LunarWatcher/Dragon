@@ -142,18 +142,24 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.subn(r"(^|[.?!]\s+)(.+?)( |$)", lambda pat : pat.group(1) + pat.group(2).title() + pat.group(3), string)
+        return re.sub(r"(^|[.?!]\s+)(.+?)( |$)", lambda pat : pat.group(1)
+                      + pat.group(2)[0].upper()
+                      + pat.group(2)[1:]
+                      + pat.group(3), string)
+
+    oldBody = post.body
+    oldTitle = post.title
+
     # We need to strip code blocks, links, and other stuff:tm: before we can capitalize sentences in the question itself.
     # This is completely irrelevant in the title.
     # (post.body, count) = internalReplace(post.body)
-    count = 0
 
     # And we do the same with the title if the post is a question
     if post.isQuestion():
-        (post.title, titleCount) = internalReplace(post.title)
-        count += titleCount
+        post.title = internalReplace(post.title)
 
-    return count
+
+    return post.body != oldBody or post.title != oldTitle
 # }}}
 # Style edits{{{
 def expandCode(post: Post):

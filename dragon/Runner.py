@@ -98,18 +98,23 @@ def processPost(post: Post):
         result = filter(post)
         if result != 0:
             hasAltered = True
+            print("Result for", filter)
 
     if hasAltered and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if response != 0:
             idUpdateMap[post.postID] = response
+        else:
+            print("Failed to update")
 
 def mainLoop():
     # Primary loop
     while True:
         # We search for questions
-        recentQuestions = SO.fetch("questions", filter = QUESTION_FILTER)["items"]
+        baseRequest = SO.fetch("questions", filter = QUESTION_FILTER)
+        recentQuestions = baseRequest["items"]
+        print("Remaining quota", baseRequest["quota_remaining"])
         # Then we process each question, which may or may not represent an update
         # to the question itself. We leave it up to the cache to determine what
         # needs a new sweep.

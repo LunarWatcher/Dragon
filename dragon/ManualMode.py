@@ -19,8 +19,9 @@ def colorDiff(diff):
 
 def checkPost(post: Post):
     if post.isQuestion():
-        checkQuestion(post)
-    else: checkAnswer(post)
+        return checkQuestion(post)
+    else:
+        return checkAnswer(post)
 
 def checkQuestion(post: Post):
     print("Title:")

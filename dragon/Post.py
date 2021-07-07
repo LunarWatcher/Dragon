@@ -34,7 +34,8 @@ class Post():
         return self.postType
 
     def publishUpdates(self, api: StackAPI, comment: str):
-        if self.postType:
+        print("Updating post...")
+        if self.isQuestion():
             # We have a question
             resp = api.send_data("questions/{}/edit".format(self.postID),
                 body = self.body, title = self.title, tags = ",".join(self.tags),
@@ -42,9 +43,10 @@ class Post():
         else:
             resp = api.send_data("answers/{}/edit".format(self.postID),
                 body = self.body, comment = comment)
+        print(resp)
         if "last_activity_date" in resp:
             return resp["last_activity_date"]
         else:
-            # TODO: error handling
+            print(resp)
             pass
         return 0
