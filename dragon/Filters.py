@@ -4,13 +4,21 @@ from Post import *
 
 ALL_ADVANCE = "(?:advance|advancing|advantage)"
 
+# The filters have been loosely split into categories, separated by
+# Vim-compatible folds. These read substantially better folded
+# TODO: more, better categories
+
 # Plain, body-only, context-free changes {{{
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| )(thanks?|tanks)( ?(you )? "
-        + "(a lot\s*|"
-            + "in " + ALL_ADVANCE + "\s*(?:for any [a-z0-9,\\- /]+(?:.|$))?"
+        "(?i)(^| )(thanks?|tanks)(?!\s*to\s*)(\s*?(you |for )* "
+        + "(\s*a lot\s*|"
+            + "in " + ALL_ADVANCE + "\s*(?:for any [a-z0-9,\\- /]+(?:.|$))?|"
+            + "\s*reading\s*|"
+            + "\s*and\s*|" # Binding
+            + "\s*I hope (?:for|you[re']*) (?:can)? help( me out)?.\s*|"
+        + "\s*(?:asap|urgentl?y?)\s*"
         + ")+)?.?\s*$",
         "\n",
         post.body,
@@ -30,7 +38,7 @@ def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:"
             + "happy coding\W*|"
-            + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
+            + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})" # TODO: harden
         + ")",
         "",
         post.body
@@ -60,7 +68,8 @@ def unnecessaryApologies(post: Post):
 
 def noHelp(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(please\\W help( me)? ?(asap|urgently)?[.?!]|i? ?(this|need|help|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated)",
+        "(?i)(please\\W help( me)? ?(asap|urgently)?[.?!]|i? ?"
+        + "(this|need|help|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated.)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -75,6 +84,37 @@ def purgeGitMemory(post: Post):
         post.body
     )
     return count
+
+# Grammar {{{
+def im(post: Post):
+    (post.body, count) = re.subn(
+        r"(?i)\b(?:i *m(?: am)?|i'am|iam)\b",
+        "I'm",
+        post.body
+    )
+    return count
+# }}}
+# Legal names {{{
+def legalNames(post: Post):
+    # This is a function that collects all legal name changes.
+    # They're all in a single function because re.subn() doesn't
+    # fully work in cases like these.
+    # We _need_ string comparison to check for changes, so to
+    # avoid a ton of unnecessary checks, we run all the legal
+    # name fixes, _then_ compare the string to notify about
+    # edits to the body.
+    names = {
+        "Stack Overflow": r"\bstack\s*overflow\b",
+        "GitHub": r"\bgit\s*hub\b"
+    }
+
+    oldBody = post.body
+
+    for repl, regex in names.items():
+        post.body = re.sub("(?i)" + regex, repl, post.body)
+
+    return oldBody != post.body
+# }}}
 # }}}
 # Contextual body edits {{{
 # }}}
@@ -94,15 +134,22 @@ def expandCode(post: Post):
 # }}}
 
 filters = [
+    # Salutations {{{
     # This one needs priority over regular "thanks"
     # to properly erase "thanks,\n\nMyName"
     eraseSalutations,
-
     noThanks,
     noGreetings,
     noHelp,
-    purgeGitMemory,
     unnecessaryApologies,
+    # }}}
+    # Stylistic {{{
+    purgeGitMemory,
+    # }}}
+
+    # Grammar {{{
+    im,
+    # }}}
 
     expandCode,
 ]

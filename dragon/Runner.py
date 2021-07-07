@@ -73,18 +73,54 @@ elif user["user_type"] not in ["registered", "moderator"]:
 # }}}
 
 # }}}
+# Cache management {{{
+idUpdateMap = {}
+
+def hasPostBeenUpdated(post: Post):
+    if post.postID not in idUpdateMap:
+        return True
+    # If the post has been updated more recently than what we have stored,
+    # return true.
+    # Then, and only then, will the post be checked
+    return idUpdateMap[post.postID] > post.lastUpdate
+
+# }}}
+
 
 def processPost(post: Post):
+    if not hasPostBeenUpdated(post):
+        # Skip posts that haven't been updated.
+        # This should only be applicable to questions.
+        # We may need to filter by the event type,
+        # but that's a problem for later
+        return
     # Cache varaible to detect changes
     hasAltered: bool = False
     for filter in Filters.filters:
         result = filter(post)
-        if result:
+        if result != 0:
             hasAltered = True
 
     if hasAltered and checkQuestion(post):
-        post.publishUpdates(SO, "Dragon::Supervised edit")
+        response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
+        # If we get 0, there's no last activity field, meaning  there's probably an error
+        if response != 0:
+            idUpdateMap[post.postID] = response
 
-# Test code for editing
-post = Post(SO.fetch("questions/68122810", filter = QUESTION_FILTER)["items"][0])
-processPost(post)
+def mainLoop():
+    # Primary loop
+    while True:
+        # We search for questions
+        recentQuestions = SO.fetch("questions", filter = QUESTION_FILTER)["items"]
+        # Then we process each question, which may or may not represent an update
+        # to the question itself. We leave it up to the cache to determine what
+        # needs a new sweep.
+        for question in recentQuestions:
+            # Convert to a post
+            questionPost = Post(question)
+            # Then we check the question
+            processPost(questionPost)
+            # And then we get and check the answers
+
+
+mainLoop()

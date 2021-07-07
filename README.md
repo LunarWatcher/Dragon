@@ -8,7 +8,7 @@
 * Python 3 (because there's few languages with good API interfaces, and C++ isn't one of them)
 * Various dependencies: `pip3 install -r requirements.txt`
 * 2k+ reputation on Stack Overflow (this tool actively blocks non-moderators with &lt;2k reputation to avoid review queue flooding)
-* A terminal that supports colorama
+* A terminal that supports colorama (potentially optional, but definitely a requirement for QOL)
 
 ## OAuth
 

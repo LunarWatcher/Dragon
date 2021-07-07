@@ -17,7 +17,7 @@ class Post():
         if self.postType:
             # Parse out titles and tags
             self.tags = apiResponse["tags"]
-            self.title = apiResponse["title"]
+            self.title = Utils.cleanHTMLEntities(apiResponse["title"])
 
         else:
             self.tags = None
@@ -27,6 +27,8 @@ class Post():
         self.oldTags = self.tags
         self.oldTitle = self.title
 
+        self.lastUpdate = apiResponse["last_activity_date"]
+
 
     def isQuestion(self):
         return self.postType
@@ -34,9 +36,15 @@ class Post():
     def publishUpdates(self, api: StackAPI, comment: str):
         if self.postType:
             # We have a question
-            api.send_data("questions/{}/edit".format(self.postID),
+            resp = api.send_data("questions/{}/edit".format(self.postID),
                 body = self.body, title = self.title, tags = ",".join(self.tags),
                 comment = comment)
         else:
-            api.send_data("answers/{}/edit".format(self.postID),
+            resp = api.send_data("answers/{}/edit".format(self.postID),
                 body = self.body, comment = comment)
+        if "last_activity_date" in resp:
+            return resp["last_activity_date"]
+        else:
+            # TODO: error handling
+            pass
+        return 0
