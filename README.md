@@ -1,5 +1,7 @@
 # Dragon
 
+([Stackapps post](https://stackapps.com/q/8940/69829))
+
 2k tool meant to automate editing on Stack Overflow, because there's too much crap to do it all manually.
 
 **Disclaimer:** There's going to be false positives. All use of this tool is at your own risk.
