@@ -1,4 +1,4 @@
-import re
+import regex as re
 
 from Post import *
 
@@ -12,13 +12,14 @@ ALL_ADVANCE = "(?:advance|advancing|advantage)"
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| )(thanks?|tanks)(?!\s*to\s*)(\s*?(you |for )* "
+        "(?i)(^| )((many)\s*)?(thanks?|tanks)(?!\s*to\s*)(\s*?(you.|for |and )* "
         + "(\s*a lot\s*|"
             + "in " + ALL_ADVANCE + "\s*(?:for any [a-z0-9,\\- /]+(?:.|$))?|"
             + "\s*reading\s*|"
             + "\s*and\s*|" # Binding
             + "\s*I hope (?:for|you[re']*) (?:can)? help( me out)?.\s*|"
-        + "\s*(?:asap|urgentl?y?)\s*"
+            + "\s*(?:asap|urgentl?y?)\s*|"
+            + "\s*best regards\s*"
         + ")+)?.?\s*$",
         "\n",
         post.body,
@@ -38,7 +39,8 @@ def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:"
             + "happy coding\W*|"
-            + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})" # TODO: harden
+            + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
+            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*)*"
         + ")",
         "",
         post.body
@@ -68,7 +70,7 @@ def unnecessaryApologies(post: Post):
 
 def noHelp(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(please\\W help( me)? ?(asap|urgently)?[.?!]|i? ?"
+        "(?i)((\s*can\s*|\s*some\s*(?:one|body)\s*|\s*please\s*|\s*kindly\s*)\\W help( me)? ?(asap|urgently)?[.?!]|i? ?"
         + "(this|need|help|much|greatly appreciated|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated.)",
         "",
         post.body,
@@ -142,7 +144,7 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(^|[.?!]\s+)(.+?)( |$)", lambda pat : pat.group(1)
+        return re.sub(r"(^|(?<!etc|i.e|e.g)[.?!]\s+)(.+?)( |$)", lambda pat : pat.group(1)
                       + pat.group(2)[0].upper()
                       + pat.group(2)[1:]
                       + pat.group(3), string)
@@ -150,9 +152,7 @@ def capitalizeSentences(post: Post):
     oldBody = post.body
     oldTitle = post.title
 
-    # We need to strip code blocks, links, and other stuff:tm: before we can capitalize sentences in the question itself.
-    # This is completely irrelevant in the title.
-    # (post.body, count) = internalReplace(post.body)
+    post.body = internalReplace(post.body)
 
     # And we do the same with the title if the post is a question
     if post.isQuestion():

@@ -1,17 +1,36 @@
 from stackapi import StackAPI
 
+import re
+import random
+
 import Utils
+
+randomNameCoefficient = str(random.randint(-1e6, 1e6))
+
+# We introduce a tiny bit of randomness into the placeholders to reduce the probability of a false positive, i.e.
+# anything related to the presence of this explicitly written in the post.
+# Not that it's gonna be a common problem, but it's a problem I don't wanna have to think about.
+PLACEHOLDER_CODEBLOCK = "__dragonCodeBlockPlaceholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_LINK = "__dragonURLPlaceholder{}__".format(randomNameCoefficient)
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
 class Post():
 
     def __init__(self, apiResponse):
+        self.placeholders = {
+            # I fucking hate this.
+            # C++ has spoiled me
+            PLACEHOLDER_CODEBLOCK: [],
+            PLACEHOLDER_LINK: []
+        }
+
         # TODO: parse out the user
         self.postType = "answer_count" in apiResponse
         self.postID = apiResponse["question_id" if self.postType else "answer_id"]
 
-        self.oldBody = Utils.cleanHTMLEntities(apiResponse["body_markdown"])
+        self.rawOldBody = Utils.cleanHTMLEntities(apiResponse["body_markdown"])
+        self.oldBody = self.stripBody(self.rawOldBody)
         self.body = self.oldBody
 
         if self.postType:
@@ -29,11 +48,15 @@ class Post():
 
         self.lastUpdate = apiResponse["last_activity_date"]
 
+        self.unpacked = False
+
 
     def isQuestion(self):
         return self.postType
 
     def publishUpdates(self, api: StackAPI, comment: str):
+        self.unpackBody()
+
         print("Updating post...")
         if self.isQuestion():
             # We have a question
@@ -50,3 +73,44 @@ class Post():
             print(resp)
             pass
         return 0
+
+    def stripBody(self, body: str):
+        def onBlock(pat):
+            self.placeholders[PLACEHOLDER_CODEBLOCK].append(pat.group(2))
+            return pat.group(1) + PLACEHOLDER_CODEBLOCK + pat.group(3)
+
+        def onBlockSpace(pat):
+            self.placeholders[PLACEHOLDER_CODEBLOCK].append(pat.group(1))
+            return PLACEHOLDER_CODEBLOCK
+
+        def onLink(pat):
+            self.placeholders[PLACEHOLDER_LINK].append(pat.group(0))
+            return PLACEHOLDER_LINK
+
+        # We wanna remove certain bits to make sure they don't interfere with other parts of the code.
+
+        # Code blocks ignore quotes. These are handled separately.
+        body = re.sub("(^```[^`]*?$\n)((?:.*?\n)+?)(^```$)", onBlock, body, flags = re.MULTILINE)
+        body = re.sub("(^<code>$\n)((?:.*?\n)+?)(^</code>$)", onBlock, body, flags = re.MULTILINE)
+        # This one has to be substantially more greedy
+        body = re.sub("((?:^\s{4,}.*?(?:\n|$))+)", onBlockSpace, body, flags = re.MULTILINE)
+
+        # And links
+        body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
+            onLink, body, flags = re.MULTILINE)
+        body = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+\/\/.*\n*)+", onLink, body, flags = re.MULTILINE)
+        return body
+
+    def unpackBody(self):
+        if self.unpacked:
+            return
+        # Iterate the placeholder type and the blocks replaced
+        for placeholderKey, blocks in self.placeholders.items():
+            # Then iterate for each substitution
+            for repl in blocks:
+                # And replace the first placeholder with the key.
+                # Thanks to lists being linear containers, order is preserved.
+                self.body = self.body.replace(placeholderKey, repl, 1)
+
+
+        self.unpacked = True

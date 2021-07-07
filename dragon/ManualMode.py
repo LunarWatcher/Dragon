@@ -1,6 +1,6 @@
 from difflib import ndiff as DiffEngine
 import sys
-from colorama import Fore, init
+from colorama import Fore, Back, init
 
 from Post import *
 init()
@@ -31,9 +31,10 @@ def checkQuestion(post: Post):
     return checkAnswer(post)
 
 def checkAnswer(post: Post):
-    for line in colorDiff(DiffEngine(post.oldBody.split("\n"), post.body.split("\n"))):
+    post.unpackBody()
+    for line in colorDiff(DiffEngine(post.rawOldBody.split("\n"), post.body.split("\n"))):
         print(line)
-    print("---------")
-    return input("Allow edit (post: https://stackoverflow.com/q/{})? [Y/n] ".format(post.postID)).lower() in ["yes", "y", "1", "true"]
+    print(Fore.CYAN, Back.CYAN, "-------------------------------------------", Fore.RESET, Back.RESET)
+    return input(Fore.YELLOW + "Allow edit (post: https://stackoverflow.com/q/{})? [Y/n] ".format(post.postID) + Fore.RESET).lower() in ["yes", "y", "1", "true"]
 
 
