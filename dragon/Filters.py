@@ -96,6 +96,14 @@ def im(post: Post):
     )
     return count
 
+def i(post: Post):
+    (post.body, count) = re.subn(
+        r"\bi('|\b)(?!\.e\.?)",
+        r"I\1",
+        post.body
+    )
+    return count
+
 def doesnt(post: Post):
     (post.body, count) = re.subn(
         r"(?i)\b(d)oesnt\b",
@@ -116,9 +124,12 @@ def legalNames(post: Post):
     # This reduces the amount of string comparisons from len(names)
     # to 1. Potentially insignificant
     names = {
-        "Stack Overflow": r"\bstack[\s-]*overflow\b",
-        "GitHub": r"\bgit[\s-]*hub\b",
+        # websites
+        "Stack Overflow": r"\bstack[\s-]*overflow\b(?!com)",
+        "GitHub": r"\bgit[\s-]*hub\b(?!com)",
+        # Generic trademarks
         "React Native": r"\breact[\s-]native\b",
+        "jQuery": r"\bjquery\b",
     }
 
     oldBody = post.body
@@ -158,7 +169,6 @@ def capitalizeSentences(post: Post):
     if post.isQuestion():
         post.title = internalReplace(post.title)
 
-
     return post.body != oldBody or post.title != oldTitle
 # }}}
 # Style edits{{{
@@ -190,7 +200,8 @@ filters = [
     # }}}
     # Grammar {{{
     im,
+    i,
     # }}}
-    legalNames,
+    legalNames, # Needs to be after capitalizeSentences, to make sure trademarks aren't incorrectly capitalized due to their sentence position
     expandCode,
 ]

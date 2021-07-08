@@ -1,7 +1,8 @@
 from stackapi import StackAPI
 
-import re
+import regex as re
 import random
+import os
 
 import Utils
 
@@ -10,8 +11,12 @@ randomNameCoefficient = str(random.randint(-1e6, 1e6))
 # We introduce a tiny bit of randomness into the placeholders to reduce the probability of a false positive, i.e.
 # anything related to the presence of this explicitly written in the post.
 # Not that it's gonna be a common problem, but it's a problem I don't wanna have to think about.
+
+# And because it's just adding a bit of randomness, it's unnecessary to generate a number for each of these.
+# That's why a single random number is used for all the placeholders.
 PLACEHOLDER_CODEBLOCK = "__dragonCodeBlockPlaceholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_LINK = "__dragonURLPlaceholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_INLINE_CODE = "__dragonInlineCodePlaceholder{}__".format(randomNameCoefficient)
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
@@ -112,5 +117,16 @@ class Post():
                 # Thanks to lists being linear containers, order is preserved.
                 self.body = self.body.replace(placeholderKey, repl, 1)
 
-
+        # Prevent several unpacks.
+        # Purely used because we also unpack before we publish, which we do because we want to make sure
+        # automatic edits are allowed to pass through without needing interference.
         self.unpacked = True
+
+    # Browser access {{{
+    def open(self):
+        os.system(f"xdg-open https://stackoverflow.com/q/{self.postID}")
+
+    def edit(self):
+        os.system(f"xdg-open https://stackoverflow.com/posts/{self.postID}/edit")
+
+    # }}}
