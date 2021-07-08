@@ -27,7 +27,8 @@ class Post():
             # I fucking hate this.
             # C++ has spoiled me
             PLACEHOLDER_CODEBLOCK: [],
-            PLACEHOLDER_LINK: []
+            PLACEHOLDER_LINK: [],
+            PLACEHOLDER_INLINE_CODE: [],
         }
 
         # TODO: parse out the user
@@ -71,11 +72,10 @@ class Post():
         else:
             resp = api.send_data("answers/{}/edit".format(self.postID),
                 body = self.body, comment = comment)
-        print(resp)
-        if "last_activity_date" in resp:
-            return resp["last_activity_date"]
+        if "items" in resp and len(resp["items"]) != 0:
+            return resp["items"][0]["last_activity_date"]
         else:
-            print(resp)
+            print("Response: ", resp)
             pass
         return 0
 
@@ -85,8 +85,17 @@ class Post():
             return pat.group(1) + PLACEHOLDER_CODEBLOCK + pat.group(3)
 
         def onBlockSpace(pat):
-            self.placeholders[PLACEHOLDER_CODEBLOCK].append(pat.group(1))
-            return PLACEHOLDER_CODEBLOCK
+            self.placeholders[PLACEHOLDER_CODEBLOCK].append(pat.group(2))
+            return pat.group(1) + PLACEHOLDER_CODEBLOCK
+
+        def onInline(pat):
+            for key in self.placeholders.keys():
+                if key in pat.group(0):
+                    # Prevent stacking multiple.
+                    # This regex covers some block cases, so we wanna make sure it, well, doesn't.
+                    return pat.group(0)
+            self.placeholders[PLACEHOLDER_INLINE_CODE].append(pat.group(2))
+            return pat.group(1) + PLACEHOLDER_INLINE_CODE + pat.group(3)
 
         def onLink(pat):
             self.placeholders[PLACEHOLDER_LINK].append(pat.group(0))
@@ -98,7 +107,10 @@ class Post():
         body = re.sub("(^```[^`]*?$\n)((?:.*?\n)+?)(^```$)", onBlock, body, flags = re.MULTILINE)
         body = re.sub("(^<code>$\n)((?:.*?\n)+?)(^</code>$)", onBlock, body, flags = re.MULTILINE)
         # This one has to be substantially more greedy
-        body = re.sub("((?:^\s{4,}.*?(?:\n|$))+)", onBlockSpace, body, flags = re.MULTILINE)
+        body = re.sub("(^\s{1,}|\A)((?:^(?: {4,}|\t+)[^\n]*?(?:\n(?:^\n)*|$))+)", onBlockSpace, body, flags = re.MULTILINE)
+
+        # Inline code
+        body = re.sub("(`{1,3})((?:[^`](?!\n\n))+?)(`{1,3})", onInline, body, flags = re.MULTILINE)
 
         # And links
         body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
@@ -116,7 +128,6 @@ class Post():
                 # And replace the first placeholder with the key.
                 # Thanks to lists being linear containers, order is preserved.
                 self.body = self.body.replace(placeholderKey, repl, 1)
-
         # Prevent several unpacks.
         # Purely used because we also unpack before we publish, which we do because we want to make sure
         # automatic edits are allowed to pass through without needing interference.

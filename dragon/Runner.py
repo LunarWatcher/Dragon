@@ -98,7 +98,6 @@ def processPost(post: Post):
         result = filter(post)
         if result != 0:
             hasAltered = True
-            print("Result for", filter)
 
     if hasAltered and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
@@ -112,6 +111,8 @@ def mainLoop():
     # Primary loop
     while True:
         # We search for questions
+        # Test IDs can be inserted by appending /id1,id2,id3,... to the path.
+        # Using questions instead of answers minimizes work
         baseRequest = SO.fetch("questions", filter = QUESTION_FILTER)
         recentQuestions = baseRequest["items"]
         print("Remaining quota", baseRequest["quota_remaining"])

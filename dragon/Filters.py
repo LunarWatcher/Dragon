@@ -9,18 +9,29 @@ ALL_ADVANCE = "(?:advance|advancing|advantage)"
 # TODO: more, better categories
 
 # Plain, body-only, context-free changes {{{
+
+# TODO: get rid of the overlap between noThanks and noHelp and this one
+def problemSentences(post: Post):
+    (post.body, count) = re.subn(
+        "(?i)[^\n.!?:]*(?:thanks|thanks?[ -]you|please|pls|help|suggest(?:ions))\b(?:[ .?!]*$|[^\n.!?:]*\b(?:help|ap+reciat\w*|me|advan\w*|a ?lot|beforehand)\b[^\n.!?:]*)[.!?_*]*(?!__dragon)",
+        "",
+        post.body,
+        flags = re.MULTILINE
+    )
+    return count
+
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| )((many)\s*)?(thanks?|tanks)(?!\s*to\s*)(\s*?(you.|for |and )* "
+        "(?i)(^| )((many)\s*)?(thanks?|tanks)(?!\s*to\s*)(\s*?(you\s*|for\s*|and\s*)*"
         + "(\s*a lot\s*|"
-            + "in " + ALL_ADVANCE + "\s*(?:for any [a-z0-9,\\- /]+(?:.|$))?|"
+            + "\s*in advan\w*\s*(?:for any [^.!\n:?]+(?:.|$))?|"
             + "\s*reading\s*|"
             + "\s*and\s*|" # Binding
             + "\s*I hope (?:for|you[re']*) (?:can)? help( me out)?.\s*|"
             + "\s*(?:asap|urgentl?y?)\s*|"
             + "\s*best regards\s*"
-        + ")+)?.?\s*$",
+        + ")+)?[^\n.!?:]*[.,?!]*\s*$",
         "\n",
         post.body,
         flags = re.MULTILINE)
@@ -40,7 +51,8 @@ def eraseSalutations(post: Post):
         "(?i)(?:"
             + "happy coding\W*|"
             + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
-            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*)*"
+            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*)*|"
+            + "good\s*(morning|day|afternoon|evening|weekend|night)"
         + ")",
         "",
         post.body
@@ -88,13 +100,21 @@ def purgeGitMemory(post: Post):
     return count
 
 # Grammar {{{
-def im(post: Post):
-    (post.body, count) = re.subn(
-        r"(?i)\b(?:i *m(?: am)?|i'am|iam)\b",
-        "I'm",
-        post.body
-    )
-    return count
+def missingAbbrevQuote(post: Post):
+    totCount = 0
+    for regex, repl in [
+            (r"(?i)\b(?:i *m(?: am)?|i'am|iam)\b", "I'm"),
+            (r"(?i)\b(d)oesnt\b", r"\1oesn't"),
+            (r"(?i)\b(c)ant\b", r"\1an't"),
+            (r"(?i)\b(w|d)ont\b", r"\1on't"),
+    ]:
+        (post.body, count) = re.subn(
+            regex,
+            repl,
+            post.body
+        )
+        totCount += count
+    return totCount
 
 def i(post: Post):
     (post.body, count) = re.subn(
@@ -104,13 +124,6 @@ def i(post: Post):
     )
     return count
 
-def doesnt(post: Post):
-    (post.body, count) = re.subn(
-        r"(?i)\b(d)oesnt\b",
-        r"\1oesn't",
-        post.body
-    )
-    return count
 # }}}
 # Legal names {{{
 def legalNames(post: Post):
@@ -155,10 +168,13 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(^|(?<!etc|i.e|e.g)[.?!]\s+)(.+?)( |$)", lambda pat : pat.group(1)
-                      + pat.group(2)[0].upper()
-                      + pat.group(2)[1:]
-                      + pat.group(3), string)
+        return re.sub(r"(^|(?<!vs|etc|i.e|e.g)[.?!]\s+)(\W*)(.+?)( |$)", lambda pat : pat.group(1)
+                      # \zs and \ze...
+                      + pat.group(2)
+                      # .capitalize() resets other capitalization, making it incredibly inappropriate
+                      + pat.group(3)[0].upper()
+                      + ("" if len(pat.group(3)) == 1 else pat.group(3)[1:])
+                      + pat.group(4), string)
 
     oldBody = post.body
     oldTitle = post.title
@@ -184,6 +200,7 @@ def expandCode(post: Post):
 
 filters = [
     # Salutations {{{
+    problemSentences,
     # This one needs priority over regular "thanks"
     # to properly erase "thanks,\n\nMyName"
     eraseSalutations,
@@ -195,13 +212,16 @@ filters = [
     # Meta {{{
     purgeGitMemory,
     # }}}
-    # Stylistic {{{
-    capitalizeSentences,
-    # }}}
     # Grammar {{{
-    im,
+    missingAbbrevQuote,
     i,
     # }}}
+    # Stylistic {{{
+    # We wanna do this fairly late, to make sure otehr changes don't break capitalization
+    capitalizeSentences,
+    # }}}
     legalNames, # Needs to be after capitalizeSentences, to make sure trademarks aren't incorrectly capitalized due to their sentence position
+
+    # And this doesn't give two shits about capitalization, so might as well do it here
     expandCode,
 ]
