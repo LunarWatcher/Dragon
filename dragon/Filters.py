@@ -118,7 +118,7 @@ def missingAbbrevQuote(post: Post):
 
 def i(post: Post):
     (post.body, count) = re.subn(
-        r"\bi('|\b)(?!\.e\.?)",
+        r"(?<!<)\bi('|\b)(?!\.e\.?|/?>)",
         r"I\1",
         post.body
     )
@@ -168,13 +168,13 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(^|(?<!vs|etc|i.e|e.g)[.?!]\s+)(\W*)(.+?)( |$)", lambda pat : pat.group(1)
+        return re.sub(r"(?i)(^|(?<!vs|etc|i.e|e.g)[.?!]\s+)(\W*)(.+?)( |$)", lambda pat : pat.group(1)
                       # \zs and \ze...
                       + pat.group(2)
                       # .capitalize() resets other capitalization, making it incredibly inappropriate
                       + pat.group(3)[0].upper()
                       + ("" if len(pat.group(3)) == 1 else pat.group(3)[1:])
-                      + pat.group(4), string)
+                      + pat.group(4), string, flags = re.MULTILINE)
 
     oldBody = post.body
     oldTitle = post.title

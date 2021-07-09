@@ -1,5 +1,5 @@
 import os
-from sys import platform
+from sys import platform, argv
 
 import html
 import re
@@ -84,7 +84,6 @@ def hasPostBeenUpdated(post: Post):
 
 # }}}
 
-
 def processPost(post: Post):
     if not hasPostBeenUpdated(post):
         # Skip posts that haven't been updated.
@@ -108,12 +107,28 @@ def processPost(post: Post):
             print("Failed to update")
 
 def mainLoop():
+    questions = []
+    if len(argv) > 1:
+        possible = argv[1:]
+
+        for q in possible:
+            try:
+                questions.append(str(int(q)))
+            except:
+                continue
+
     # Primary loop
-    while True:
+    # len(argv) == 1 is always true if there's no arguments supplied,
+    # and false otherwise.
+    # If it's false, we pop the questions array instead,
+    # to get the next bit of the query.
+    l = len(argv)
+    while l == 1 or len(questions) > 0:
         # We search for questions
         # Test IDs can be inserted by appending /id1,id2,id3,... to the path.
         # Using questions instead of answers minimizes work
-        baseRequest = SO.fetch("questions", filter = QUESTION_FILTER)
+        baseRequest = SO.fetch("questions" + (("/" + (",".join(questions))) if len(questions) > 0 else ""), filter = QUESTION_FILTER)
+        questions = []
         recentQuestions = baseRequest["items"]
         print("Remaining quota", baseRequest["quota_remaining"])
         # Then we process each question, which may or may not represent an update
@@ -143,6 +158,5 @@ def mainLoop():
             for answer in question["answers"]:
                 answerPost = Post(answer)
                 processPost(answerPost)
-
 
 mainLoop()
