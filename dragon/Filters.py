@@ -51,9 +51,9 @@ def eraseSalutations(post: Post):
         "(?i)(?:"
             + "happy coding\W*|"
             + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
-            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*)*|"
+            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*)*|"
             + "good\s*(morning|day|afternoon|evening|weekend|night)"
-        + ")",
+        + ")[.!?]*",
         "",
         post.body
     )
@@ -67,7 +67,8 @@ def unnecessaryApologies(post: Post):
         + ")"
         #  Then we worry about the bit that comes after it, if there is anything
         + "("
-            + "for [a-z0-9/-]{,40}" # Handle short fragments in the same sentence
+        #              v bad grammar alternative
+            + "\s*(for|to) [^!.?]{,40}" # Handle short fragments in the same sentence
         + ")?"
         # End the match at a punctuation, to make sure "Apologies in advance, I'm not blah blah blah" doesn't leave ", I'm not blah ..."
         # as a stub.
@@ -82,7 +83,7 @@ def unnecessaryApologies(post: Post):
 
 def noHelp(post: Post):
     (post.body, count) = re.subn(
-        "(?i)((\s*can\s*|\s*some\s*(?:one|body)\s*|\s*please\s*|\s*kindly\s*)\\W help( me)? ?(asap|urgently)?[.?!]|i? ?"
+        "(?i)((\s*can\s*|\s*some\s*(?:one|body)\s*|\s*please\s*|\s*kindly\s*)*,* help( me)? ?(asap|urgently)?[.?!,]|i? ?"
         + "(this|need|help|much|greatly appreciated|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated.)",
         "",
         post.body,
@@ -98,6 +99,11 @@ def purgeGitMemory(post: Post):
         post.body
     )
     return count
+
+def newTo(post: Post):
+    (post.body, count) = re.subn(
+
+    )
 
 # Grammar {{{
 def missingAbbrevQuote(post: Post):
@@ -168,7 +174,7 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(?i)(^|(?<!vs|etc|i.e|e.g)[.?!]\s+)(\W*)(.+?)( |$)", lambda pat : pat.group(1)
+        return re.sub(r"(?i)(^|(?<!vs|etc|i.e|e.g)[.?!]\s+)([^\w,]*)(.+?)( |$)", lambda pat : pat.group(1)
                       # \zs and \ze...
                       + pat.group(2)
                       # .capitalize() resets other capitalization, making it incredibly inappropriate
