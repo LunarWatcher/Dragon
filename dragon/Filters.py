@@ -69,6 +69,8 @@ def eraseSalutations(post: Post):
     return count
 
 def firstQuestion(post: Post):
+    # https://regex101.com/r/RTnIKW/1
+
     (post.body, count) = re.subn(
         "(?i)(?:P.?S[^ ]*\s*)?(?:I[' ]?a?m.{,50})?(?:this is|it.?s) (?:also +)?my +first +question(?: +(?:\s*(?:here|[io]n|stack\s*o[vw]erflow)\s*)+)?(?:[.?!]|, [^!?.\n]+[.?!]*)",
         "",
