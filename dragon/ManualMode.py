@@ -9,6 +9,7 @@ init()
 exitConditions = [
     "y", "yes", "1", "true",
     "n", "no", "ye", "ne",
+    "q"
 ]
 
 def colorDiff(diff):
@@ -52,4 +53,7 @@ def checkAnswer(post: Post):
         return True
     elif response == "ne":
         post.edit()
+    elif response == "q":
+        print("Exiting...")
+        exit(0)
     return False

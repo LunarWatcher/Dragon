@@ -23,7 +23,7 @@ def problemSentences(post: Post):
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| )((many)\s*)?(thanks?|tanks)(?!\s*to\s*)(\s*?(you\s*|for\s*|and\s*)*"
+        "(?i)(^| |,\s*)(any advice[^.!?]{0,80}|(many)\s*)?(thanks?|tanks)\s*(?!to\s*)(\s*?(you\s*|for\s*|and\s*)*"
         + "(\s*a lot\s*|"
             + "\s*in advan\w*\s*(?:for any [^.!\n:?]+(?:.|$))?|"
             + "\s*reading\s*|"
@@ -51,9 +51,19 @@ def eraseSalutations(post: Post):
         "(?i)(?:"
             + "happy coding\W*|"
             + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
-            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*)*|"
-            + "good\s*(morning|day|afternoon|evening|weekend|night)"
+            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
+            + "\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
+            + "good\s*(morning|day|afternoon|evening|weekend|night)|"
+            + "everyone"
         + ")[.!?]*",
+        "",
+        post.body
+    )
+    return count
+
+def firstQuestion(post: Post):
+    (post.body, count) = re.subn(
+        "(?i)(?:P.?S[^ ]*\s*)?(?:I[' ]?a?m.{,50})?(?:this is|it.?s) (?:also +)?my +first +question(?: +(?:\s*(?:here|[io]n|stack\s*o[vw]erflow)\s*)+)?(?:[.?!]|, [^!?.\n]+[.?!]*)",
         "",
         post.body
     )
@@ -62,7 +72,7 @@ def eraseSalutations(post: Post):
 def unnecessaryApologies(post: Post):
     (post.body, count) = re.subn(
         # Start by dealing with the leading fragment
-        "(?i)(i'?m?\s*(am)?\s*)?(?:"
+        "(?i)(\s*(i'?m?\s*(am)?\s*|yeah)\s*)*(?:"
             + "sorry|apologi[zse]{2}\s*(in " + ALL_ADVANCE + ")?"
         + ")"
         #  Then we worry about the bit that comes after it, if there is anything
@@ -83,8 +93,12 @@ def unnecessaryApologies(post: Post):
 
 def noHelp(post: Post):
     (post.body, count) = re.subn(
-        "(?i)((\s*can\s*|\s*some\s*(?:one|body)\s*|\s*please\s*|\s*kindly\s*)*,* help( me)? ?(asap|urgently)?[.?!,]|i? ?"
-        + "(this|need|help|much|greatly appreciated|urgently|asap|as soon as possible){2,}|i appreciate.{,20}help|any help.{,20}appreciated.)",
+        "(?i)(?:(?:^|[.?!]\s*)[^.?!\n]{15}|^)"
+        + "(?:please|pl[zs]+)?\s*"
+        + "(?:help|assist)\s*"
+        + "(?:me\s*|urgently\s*)?"
+        + "[^!.?\n]{,40}"
+        + "[!.?]+", # Trailing punctuation
         "",
         post.body,
         flags = re.MULTILINE
@@ -109,7 +123,7 @@ def newTo(post: Post):
 def missingAbbrevQuote(post: Post):
     totCount = 0
     for regex, repl in [
-            (r"(?i)\b(?:i *m(?: am)?|i'am|iam)\b", "I'm"),
+            (r"(?i)\b(?:i\"m|i *m(?: am)?|i'am|iam)\b", "I'm"),
             (r"(?i)\b(d)oesnt\b", r"\1oesn't"),
             (r"(?i)\b(c)ant\b", r"\1an't"),
             (r"(?i)\b(w|d)ont\b", r"\1on't"),
@@ -129,6 +143,21 @@ def i(post: Post):
         post.body
     )
     return count
+
+def fixPunctuationSpacing(post: Post):
+    # Post
+    (post.body, count) = re.subn(
+        "[.!?]([a-zA-Z]+(?:[ ,]|$))",
+        r"\1 \2",
+        post.body
+    )
+    # Pre
+    (post.body, count2) = re.subn(
+        " +([.!?])",
+        "\\1",
+        post.body
+    )
+    return count or count2
 
 # }}}
 # Legal names {{{
@@ -174,13 +203,13 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(?i)(^|(?<!vs|etc|i.e|e.g)[.?!]\s+)([^\w,]*)(.+?)( |$)", lambda pat : pat.group(1)
+        return re.sub(r"(?i)((?<!vs|etc|i.e|e.g)[.?!] +|\A|^\n^)((?!<)[^\w,]*)([^.!?]+?)((?=[.!? ]|$))", lambda pat : pat.group(1)
                       # \zs and \ze...
                       + pat.group(2)
                       # .capitalize() resets other capitalization, making it incredibly inappropriate
                       + pat.group(3)[0].upper()
-                      + ("" if len(pat.group(3)) == 1 else pat.group(3)[1:])
-                      + pat.group(4), string, flags = re.MULTILINE)
+                      + ("" if len(pat.group(3)) == 1 else pat.group(3)[1:]),
+                      string, flags = re.MULTILINE)
 
     oldBody = post.body
     oldTitle = post.title
@@ -207,6 +236,7 @@ def expandCode(post: Post):
 filters = [
     # Salutations {{{
     problemSentences,
+    firstQuestion,
     # This one needs priority over regular "thanks"
     # to properly erase "thanks,\n\nMyName"
     eraseSalutations,

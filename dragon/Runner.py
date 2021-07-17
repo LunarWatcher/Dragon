@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 from sys import platform, argv
 
@@ -27,6 +28,9 @@ OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
 # Filter for the /questions endpoint
 QUESTION_FILTER = "!3xr(P-20tB)GfFE5r"
 # }}}
+# }}}
+# User interface {{{
+DRAGON_DEBUG = os.environ["DRAGON_DEBUG"] == "1"
 # }}}
 # Token management {{{
 oauthToken = ""
@@ -97,6 +101,8 @@ def processPost(post: Post):
         result = filter(post)
         if result != 0:
             hasAltered = True
+            if DRAGON_DEBUG:
+                print("Filter matched:", filter)
 
     if hasAltered and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
