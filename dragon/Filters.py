@@ -59,6 +59,8 @@ def eraseSalutations(post: Post):
             + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + "\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
             + "good\s*(morning|day|afternoon|evening|weekend|night)|"
+            # This one needs to be hardened, because everyone does have good use cases elsewhere
+            # We want to detect "Everyone!" as a standalone word. Otherwise, we glob it into other regexes
             + "(^|(?<=[.!?] +))everyone[.!?]"
         + ")[.!?]*",
         "",
@@ -123,7 +125,7 @@ def noHelp(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
         + "(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
-        + "(?:\s*(?:help|assist|suggest(?:ion)?|show|teach|let me know)\s*)+\s*"
+        + "(?:\s*(?:help|assist|teach|let me know)\s*)+\s*"
         + "(?:me\s*|urgently\s*)?"
         + "[^!.?\n]{,40}"
         + "($|[!.?]+)", # Trailing punctuation or EOL
@@ -182,20 +184,15 @@ def so(post: Post):
     return count
 
 def fixPunctuationSpacing(post: Post):
-    # Post
-    (post.body, count) = re.subn(
-        "([.!?])([a-zA-Z]+(?:[ ,]|$))",
-        r"\1 \2",
-        post.body
-    )
+    # Introducing spacing after punctuation causes problems with unformatted file names.
     # Pre
-    (post.body, count2) = re.subn(
+    (post.body, count) = re.subn(
         #         vvvvv avoid matching ", ..." (or the 'typo', ", ..")
         " +([.!?])(?!.)",
         "\\1",
         post.body
     )
-    return count or count2
+    return count
 
 # }}}
 # Legal names {{{
