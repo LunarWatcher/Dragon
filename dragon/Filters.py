@@ -118,7 +118,7 @@ def noHelp(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
         + "(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
-        + "(?:\s*(?:help|assist|suggest(?:ion)?|show|teach)\s*)+\s*"
+        + "(?:\s*(?:help|assist|suggest(?:ion)?|show|teach|let me know)\s*)+\s*"
         + "(?:me\s*|urgently\s*)?"
         + "[^!.?\n]{,40}"
         + "($|[!.?]+)", # Trailing punctuation or EOL
