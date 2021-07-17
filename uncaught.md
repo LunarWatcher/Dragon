@@ -10,8 +10,4 @@ Like I said I'm new so I'm quite lost here.
 
 **I'm new on Angular and** I'm trying to get all data of one table and do an Excel of it.
 
-please show me how to do so
-
-Please suggest a solution.Thanks.
-
-
+- It would be great to hear your opinion on this and, once again, advanced apologies if it turns out to be a mistake on my side.

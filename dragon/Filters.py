@@ -95,10 +95,10 @@ def noHelp(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:(?:^|[.?!,]\s*)[^.?!\n]{,15}|^)"
         + "(?:please|pl[zs]+|any)?\s*"
-        + "(?:help|assist)\s*"
+        + "(?:help|assist|suggest(?:ion)?|show)\s*"
         + "(?:me\s*|urgently\s*)?"
         + "[^!.?\n]{,40}"
-        + "($|[!.?]+)", # Trailing punctuation or EOL
+        + "(?=$|[!.?]+)", # Trailing punctuation or EOL
         "",
         post.body,
         flags = re.MULTILINE
