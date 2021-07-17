@@ -93,12 +93,12 @@ def unnecessaryApologies(post: Post):
 
 def noHelp(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(?:(?:^|[.?!]\s*)[^.?!\n]{15}|^)"
-        + "(?:please|pl[zs]+)?\s*"
+        "(?i)(?:(?:^|[.?!,]\s*)[^.?!\n]{,15}|^)"
+        + "(?:please|pl[zs]+|any)?\s*"
         + "(?:help|assist)\s*"
         + "(?:me\s*|urgently\s*)?"
         + "[^!.?\n]{,40}"
-        + "[!.?]+", # Trailing punctuation
+        + "($|[!.?]+)", # Trailing punctuation or EOL
         "",
         post.body,
         flags = re.MULTILINE
