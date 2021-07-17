@@ -27,3 +27,11 @@ Blanket-removing "thanks" and "please" will not work on a language site, for an 
 Other sites in general also have other patterns - consequently, what Dragon has to be efficient on SO may not be enough to be efficient on [insert your favorite site].
 
 As a result, to adapt Dragon to another site, _all_ filters need to be re-written. This also includes for localized versions of SO, as several of the filters are English-centric, and may _introduce_ problems with other languages.
+
+## TODO:
+
+* [ ] Add something (state machine?) that attempts to determine certain aspects about a post. This may end up being heavy, at least if we expand outside the realm of regex. May require machine learning and end up being unfeasible.
+
+### Continuous
+* Find more uncaught stuff to put in uncaught.md
+* Clear out uncaught.md

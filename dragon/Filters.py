@@ -23,7 +23,7 @@ def problemSentences(post: Post):
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| |,\s*)(any advice[^.!?]{0,80}|(many)\s*)?(thanks?|tanks)\s*(?!to\s*)(\s*?(you\s*|for\s*|and\s*)*"
+        "(?i)(^| |,\s*)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks)\s*(?!to\s*)(\s*?(you\s*|for\s*|and\s*)*"
         + "(\s*a lot\s*|"
             + "\s*in advan\w*\s*(?:for any [^.!\n:?]+(?:.|$))?|"
             + "\s*reading\s*|"
@@ -92,14 +92,37 @@ def unnecessaryApologies(post: Post):
     return count
 
 def noHelp(post: Post):
+    # We need to better determine what punctuation to remove, so we use a function.
+    def replace(pat):
+        # We have groups for the punctuation
+        # For context, consider:
+        #     This, please help me.
+        # and
+        #     This. please help me!
+        # If we always remove the first one, the second one would be replaced with "This!".
+        # If we always remove the second, the first one would be replaced with "This,", along with
+        # some potentially unknown amount of spaces.
+        # (note that the first example above would be removed in their entirety due to the {,15}.
+        # disregarding that detail, the above example holds.)
+        #
+        # By checking for a comma, we can better determine which to use. It may not always be completely
+        # correct, but it's a step in the right direction when we can't semantically fix punctuation.
+        # That's substantially more complicated, and probably not regexable
+        introPunct = pat.group(1)
+        endPunct = pat.group(2)
+        # If we have a comma, we respect the end punctuation
+        if introPunct.startswith(","):
+            return endPunct
+        return introPunct
+
     (post.body, count) = re.subn(
-        "(?i)(?:(?:^|[.?!,]\s*)[^.?!\n]{,15}|^)"
-        + "(?:please|pl[zs]+|any)?\s*"
-        + "(?:help|assist|suggest(?:ion)?|show)\s*"
+        "(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
+        + "(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
+        + "(?:\s*(?:help|assist|suggest(?:ion)?|show|teach)\s*)+\s*"
         + "(?:me\s*|urgently\s*)?"
         + "[^!.?\n]{,40}"
-        + "(?=$|[!.?]+)", # Trailing punctuation or EOL
-        "",
+        + "($|[!.?]+)", # Trailing punctuation or EOL
+        replace,
         post.body,
         flags = re.MULTILINE
     )
@@ -144,6 +167,14 @@ def i(post: Post):
     )
     return count
 
+def so(post: Post):
+    (post.body, count) = re.subn(
+        r"(?i)^(?:ok[iay]*\b|so\b|[ \t,-])+",
+        "",
+        post.body
+    )
+    return count
+
 def fixPunctuationSpacing(post: Post):
     # Post
     (post.body, count) = re.subn(
@@ -178,6 +209,11 @@ def legalNames(post: Post):
         # Generic trademarks
         "React Native": r"\breact[\s-]native\b",
         "jQuery": r"\bjquery\b",
+        "CSS": r"\bcss\b",
+        # We're not matching java script because it could be a writer with poor technical understanding
+        # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
+        # but we don't have enough context to make an informed decision.
+        "JavaScript": r"\b(js|javascript)\b",
     }
 
     oldBody = post.body
@@ -251,9 +287,11 @@ filters = [
     # Grammar {{{
     missingAbbrevQuote,
     i,
+    so,
     # }}}
     # Stylistic {{{
     # We wanna do this fairly late, to make sure otehr changes don't break capitalization
+    fixPunctuationSpacing,
     capitalizeSentences,
     # }}}
     legalNames, # Needs to be after capitalizeSentences, to make sure trademarks aren't incorrectly capitalized due to their sentence position
