@@ -24,14 +24,19 @@ def problemSentences(post: Post):
 def noThanks(post: Post):
     (post.body, count) = re.subn(
         "(?i)(^| |,\s*)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks)\s*(?!to\s*)(\s*?(you\s*|for\s*|and\s*)*"
-        + "(\s*a lot\s*|"
-            + "\s*in advan\w*\s*(?:for any [^.!\n:?]+(?:.|$))?|"
-            + "\s*reading\s*|"
-            + "\s*and\s*|" # Binding
-            + "\s*I hope (?:for|you[re']*) (?:can)? help( me out)?.\s*|"
-            + "\s*(?:asap|urgentl?y?)\s*|"
-            + "\s*best regards\s*"
-        + ")+)?[^\n.!?:]*[.,?!]*\s*$",
+        + r"(\s*(a lot|"
+            + "in advan\w*\s*(?:for any [^.!\n:?]+(?:.|$))?|"
+            + "reading|"
+            + "and|" # Binding
+            + "I hope (?:for|you[re']*) (?:can)? help( me out)?.|"
+            + "(?:asap|urgentl?y?)\s*|"
+            + "best regards|"
+            + "every\s*(?:one|body)"
+        #          vv allow a single comma after the known phrases
+        + ")\s*)+)?"
+        + ",?[^\n.!?:,]*"
+        + "[.,?!]*"
+        + "\s*(:-?\))?", # Trailing smileys
         "\n",
         post.body,
         flags = re.MULTILINE)
@@ -39,7 +44,7 @@ def noThanks(post: Post):
 
 def noGreetings(post: Post):
     (post.body, count) = re.subn(
-        "(?i)^(hell?o|halo|hi(ya)?|hey+)\s*((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)",
+        "(?i)^(hell?o|halo|hi(ya)?|hey+)\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))",
         "",
         post.body,
         flags = re.MULTILINE
@@ -54,7 +59,7 @@ def eraseSalutations(post: Post):
             + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + "\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
             + "good\s*(morning|day|afternoon|evening|weekend|night)|"
-            + "everyone"
+            + "(^|(?<=[.!?] +))everyone[.!?]"
         + ")[.!?]*",
         "",
         post.body
@@ -150,6 +155,7 @@ def missingAbbrevQuote(post: Post):
             (r"(?i)\b(d)oesnt\b", r"\1oesn't"),
             (r"(?i)\b(c)ant\b", r"\1an't"),
             (r"(?i)\b(w|d)ont\b", r"\1on't"),
+            (r"(?i)\bi[\" ]?ve", r"I've")
     ]:
         (post.body, count) = re.subn(
             regex,
@@ -178,13 +184,14 @@ def so(post: Post):
 def fixPunctuationSpacing(post: Post):
     # Post
     (post.body, count) = re.subn(
-        "[.!?]([a-zA-Z]+(?:[ ,]|$))",
+        "([.!?])([a-zA-Z]+(?:[ ,]|$))",
         r"\1 \2",
         post.body
     )
     # Pre
     (post.body, count2) = re.subn(
-        " +([.!?])",
+        #         vvvvv avoid matching ", ..." (or the 'typo', ", ..")
+        " +([.!?])(?!.)",
         "\\1",
         post.body
     )
