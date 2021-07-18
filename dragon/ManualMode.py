@@ -1,5 +1,6 @@
 from difflib import ndiff as DiffEngine
 import sys
+import os
 from colorama import Fore, Back, init
 
 from Post import *
@@ -12,6 +13,7 @@ exitConditions = [
     "q"
 ]
 
+DRAGON_EXPAND = 0 if "DRAGON_EXPAND" not in os.environ else os.environ["DRAGON_EXPAND"]
 count: int = -2
 
 def colorDiff(diff):
@@ -31,9 +33,12 @@ def colorDiff(diff):
             count = -2
             yield frag + Fore.BLUE + line + Fore.RESET
         else:
-            count += 1
-            if count >= 0:
-                yield "__DRAGON_IGN__"
+            if not DRAGON_EXPAND:
+                count += 1
+                if count >= 0:
+                    yield "__DRAGON_IGN__"
+                else:
+                    yield line
             else:
                 yield line
 

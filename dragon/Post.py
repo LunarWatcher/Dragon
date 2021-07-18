@@ -118,7 +118,11 @@ class Post():
         # We wanna remove certain bits to make sure they don't interfere with other parts of the code.
 
         # Code blocks ignore quotes. These are handled separately.
-        body = re.sub("(^```)([^`]*?$\n)((?:.*?\n?)+?)(```$|\Z)", onFence, body, flags = re.MULTILINE)
+        #                                                    vv gotta love regex, backreferencing group 1 to get the correct
+        #                                                       close delimiter. This also helps delimit properly while editing.
+        #                                                       While this does mean letting fences overflow, it prevents
+        #                                                       damaging code.
+        body = re.sub(r"(^[`~]{3,})([^`]*?$\n)((?:.*?\n?)+?)(\1$|\Z)", onFence, body, flags = re.MULTILINE)
         body = re.sub("(^<code>$\n)((?:.*?\n)+?)(^</code>$)", onHTMLBlock, body, flags = re.MULTILINE)
         # This one has to be substantially more greedy
         body = re.sub("(^\s{1,}|\A)((?:^(?: {4,}|\t+)[^\n]*?(?:\n(?:^\n)*?|$))+)",

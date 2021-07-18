@@ -23,20 +23,20 @@ def problemSentences(post: Post):
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| |,\s*)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks)\s*(?!to\s*)(\s*?(you\s*|for\s*|and\s*)*"
-        + r"(\s*(a lot|"
-            + "in advan\w*\s*(?:for any [^.!\n:?]+(?:.|$))?|"
+        "(?i)(^| |, *|- *)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks|tia) *(?!to *)( *?(you *|for *|and *)*"
+        + r"( *(a lot|"
+            + "in advan\w* *(?:for any [^.!\n:?]+(?:.|$))?|"
             + "reading|"
             + "and|" # Binding
             + "I hope (?:for|you[re']*) (?:can)? help( me out)?.|"
-            + "(?:asap|urgentl?y?)\s*|"
+            + "(?:asap|urgentl?y?) *|"
             + "best regards|"
-            + "every\s*(?:one|body)"
+            + "every *(?:one|body)"
         #          vv allow a single comma after the known phrases
-        + ")\s*)+)?"
+        + ") *)+)?"
         + ",?[^\n.!?:,]*"
         + "[.,?!]*"
-        + "\s*(:-?\))?", # Trailing smileys
+        + " *(:-?\))?", # Trailing smileys
         "\n",
         post.body,
         flags = re.MULTILINE)
@@ -44,7 +44,7 @@ def noThanks(post: Post):
 
 def noGreetings(post: Post):
     (post.body, count) = re.subn(
-        "(?i)^(hell?o|halo|hi(ya)?|hey+)\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))",
+        "(?i)^(hell?o|halo|hi(ya)?|he[yi]+)\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))",
         "",
         post.body,
         flags = re.MULTILINE
@@ -55,7 +55,7 @@ def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:"
             + "happy coding\W*|"
-            + "(((kind(?:est)|best)?\s*regards|cheers|thanks),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
+            + "(((kind(?:est)|best)?\s*regards|cheers|thanks? *(you *)?),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
             + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + "\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
             + "good\s*(morning|day|afternoon|evening|weekend|night)|"
@@ -207,7 +207,8 @@ def legalNames(post: Post):
     # name fixes, _then_ compare the string to notify about
     # edits to the body.
     # This reduces the amount of string comparisons from len(names)
-    # to 1. Potentially insignificant
+    # to 1. Potentially insignificant, but reduces a substantial amount
+    # of operations. I consider that a win
     names = {
         # websites
         "Stack Overflow": r"\bstack[\s-]*overflow\b(?!com)",
@@ -215,11 +216,11 @@ def legalNames(post: Post):
         # Generic trademarks
         "React Native": r"\breact[\s-]native\b",
         "jQuery": r"\bjquery\b",
-        "CSS": r"\bcss\b",
+        "CSS": r"\bcss\b", "HTML": r"\bhtml\b", "Node.JS": "\bnode.?js\b",
         # We're not matching java script because it could be a writer with poor technical understanding
         # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
         # but we don't have enough context to make an informed decision.
-        "JavaScript": r"\b(js|javascript)\b",
+        "JavaScript": r"\b(?<!\.)(js|javascript)\b",
     }
 
     oldBody = post.body
