@@ -31,7 +31,8 @@ As a result, to adapt Dragon to another site, _all_ filters need to be re-writte
 ## TODO:
 
 * [ ] Add something (state machine?) that attempts to determine certain aspects about a post. This may end up being heavy, at least if we expand outside the realm of regex. May require machine learning and end up being unfeasible.
-
+* [ ] Reupload third party images to stack.imgur.com
+ 
 ### Continuous
 * Find more uncaught stuff to put in uncaught.md
 * Clear out uncaught.md
