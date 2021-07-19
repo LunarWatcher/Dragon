@@ -36,15 +36,32 @@ def noThanks(post: Post):
         + ") *)+)?"
         + ",?[^\n.!?:,]*"
         + "[.,?!]*"
-        + " *(:-?\))?", # Trailing smileys
+        + " *([:;]-?\))?\)*", # Trailing smileys
         "\n",
         post.body,
         flags = re.MULTILINE)
     return count
 
+def noSolutionMeta(post: Post):
+    # This is primarily aimed at answers. If this is present in questions, the question has problems
+    # and we don't wanna touch this part with a 10 meter pole
+    if post.isQuestion():
+        return 0
+    # https://regex101.com/r/E3tkhU/1
+    (post.body, count) = re.subn(
+        "(?i)(?<=^|[.:!?] +)(?:(?:this *|i(?:[' ]a?m)? +)?"
+            + "(solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
+            + "I gave up[^.!?\n]*solutions?[^.!?\n]*)[.?!]*|"
+            + "I hope this helps",
+        "",
+        post.body,
+        flags = re.MULTILINE
+    )
+    return count
+
 def noGreetings(post: Post):
     (post.body, count) = re.subn(
-        "(?i)^(hell?o|halo|hi(ya)?|he[yi]+)\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))",
+        "(?i)^(hell?o|halo|hi(ya)?|he[yi]+)\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -54,17 +71,22 @@ def noGreetings(post: Post):
 def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:"
-            + "happy coding\W*|"
-            + "(((kind(?:est)|best)?\s*regards|cheers|thanks? *(you *)?),?\n+[0-9a-z.\\-,! /]{,40})|" # TODO: harden
-            + "can (?:any|some)\s*one help\s*(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
-            + "\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
-            + "good\s*(morning|day|afternoon|evening|weekend|night)|"
+            + r"happy coding\W*|"
+            + r"(((kind(?:est)|best)?\s*regards|cheers|thanks? *(you *)?).?\n+[0-9a-z.\-,! /]{,40}\Z)|" # TODO: harden
+            + r"((can (?:any|some)\s*one|I need|please) +)+(help|hello)(?! +to) *(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
+            + r"\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
+            + r"good\s*(morning|day|afternoon|evening|weekend|night)|"
             # This one needs to be hardened, because everyone does have good use cases elsewhere
             # We want to detect "Everyone!" as a standalone word. Otherwise, we glob it into other regexes
-            + "(^|(?<=[.!?] +))everyone[.!?]"
+            + r"(^|(?<=[.!?] +))everyone[.!?]|"
+            + r"(?i)(?:^|[.:!?]) *(?:is|have|has)(?: +(?:you|any *(?:one|body)|guy'?s?|) *)+.{,50}problem"
+                + "( with.{,20}?)([.?,!]+|$)|"
+            + r"(\b| )[:;]-?[D()8d]+(\b|$| )|\\o/|"
+            + r"I appreciate (?:your|the) (help|assistance)( in advance)[.?!]?"
         + ")[.!?]*",
         "",
-        post.body
+        post.body,
+        flags = re.MULTILINE
     )
     return count
 
@@ -125,12 +147,13 @@ def noHelp(post: Post):
         return introPunct
 
     (post.body, count) = re.subn(
-        "(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
-        + "(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
-        + "(?:\s*(?:help|assist|teach|let me know)\s*)+\s*"
-        + "(?:me\s*|urgently\s*)?"
-        + "[^!.?\n]{,40}"
-        + "($|[!.?]+)", # Trailing punctuation or EOL
+        r"(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
+        + r"(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
+        + r"(?:\s*(?:help|assist|teach|let me know)\b\s*)+\s*"
+        + r"(?:me\s*(?:fix th?is|understand)|urgently\s*)?"
+        + r"[^!.?\n,]{,60} *"
+        + r"($|[!.?),]+)" # Trailing punctuation or EOL
+        + r"(?: *[;:]-?[()]+)?",
         replace,
         post.body,
         flags = re.MULTILINE
@@ -148,8 +171,12 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-
+        "(?i)(I.{,3}|a)m.{,15}?new *(?:with|on|to|for).{,30}?(and) *,?",
+        "",
+        post.body,
+        flags = re.MULTILINE
     )
+    return count
 
 # Grammar {{{
 def missingAbbrevQuote(post: Post):
@@ -179,20 +206,22 @@ def i(post: Post):
 
 def so(post: Post):
     (post.body, count) = re.subn(
-        r"(?i)^(?:ok[iay]*\b|so\b|[ \t,-])+",
+        r"(?i)^(?:ye(ah?|s)?\b|ok[iay]*\b|so\b|[ \t,-])+",
         "",
         post.body
     )
     return count
 
 def fixPunctuationSpacing(post: Post):
+    # Bad: aggressive capitalization triggered u(whatever, I don't remember): https://stackoverflow.com/posts/51479419/revisions
     # Introducing spacing after punctuation causes problems with unformatted file names.
     # Pre
     (post.body, count) = re.subn(
-        #         vvvvv avoid matching ", ..." (or the 'typo', ", ..")
-        " +([.!?])(?!.)",
+        #                                                 vvvvv avoid matching ", ..." (or the 'typo', ", ..")
+        "(?<![0-9]|^ *- |^> *|(?:the|an?) *(?:file *)?) +([.!?,:])(?!\.|[0-9]|\))",
         "\\1",
-        post.body
+        post.body,
+        flags = re.MULTILINE
     )
     return count
 
@@ -267,6 +296,7 @@ def capitalizeSentences(post: Post):
 # }}}
 # Style edits{{{
 def expandCode(post: Post):
+    # Bad: https://stackoverflow.com/posts/68446681/revisions @ rev2
     (post.body, count) = re.subn(
         "^`([^`]+)`$",
         "```\n\\1\n```",
@@ -280,13 +310,15 @@ filters = [
     # Salutations {{{
     problemSentences,
     firstQuestion,
+    noHelp,
     # This one needs priority over regular "thanks"
     # to properly erase "thanks,\n\nMyName"
     eraseSalutations,
     noThanks,
     noGreetings,
-    noHelp,
+    noSolutionMeta,
     unnecessaryApologies,
+    newTo,
     # }}}
     # Meta {{{
     purgeGitMemory,

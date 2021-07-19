@@ -122,7 +122,7 @@ class Post():
         #                                                       close delimiter. This also helps delimit properly while editing.
         #                                                       While this does mean letting fences overflow, it prevents
         #                                                       damaging code.
-        body = re.sub(r"(^[`~]{3,})([^`]*?$\n)((?:.*?\n?)+?)(\1$|\Z)", onFence, body, flags = re.MULTILINE)
+        body = re.sub(r"(^[`~]{3,})([^`]*?$\n)((?:.*?\n?)+?)(\1[`~]*$|\Z)", onFence, body, flags = re.MULTILINE)
         body = re.sub("(^<code>$\n)((?:.*?\n)+?)(^</code>$)", onHTMLBlock, body, flags = re.MULTILINE)
         # This one has to be substantially more greedy
         body = re.sub("(^\s{1,}|\A)((?:^(?: {4,}|\t+)[^\n]*?(?:\n(?:^\n)*?|$))+)",

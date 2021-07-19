@@ -8,9 +8,11 @@ If a sentence contains bold, only those parts should be removed. Otherwise, the 
 
 Like I said I'm new so I'm quite lost here.
 
-**I'm new on Angular and** I'm trying to get all data of one table and do an Excel of it.
+As you would have known I am quite new to this.  Please let me know if additional inputs are needed from my side.
 
-- It would be great to hear your opinion on this and, once again, advanced apologies if it turns out to be a mistake on my side.
+Please bear with my first ever question on Stack Overflow.
+
+It would be great to hear your opinion on this and, once again, advanced apologies if it turns out to be a mistake on my side.
 
 New to coding sorry if the question not explained well.
 
@@ -22,5 +24,6 @@ Any suggestions pls?
 
 PS: I'm not English speaker so sorry if I made some English mistake.
 
+I hope someone can help and I thank you in advance for any help! 
 
 What have I done wrong here and should there be a better way of doing this. **Any suggestions are greatly appreciated**

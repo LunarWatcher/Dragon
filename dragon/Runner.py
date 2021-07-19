@@ -155,14 +155,15 @@ def mainLoop():
             # Then we check the question
             processPost(questionPost)
 
-            # The answer key isn't present if there are no answers
+            # The answers key isn't present if there are no answers.
             if question["answer_count"] == 0:
-                # So if there's 0, we continue the loop
+                # So if the answer count is 0, we continue the loop
                 continue
 
             # Otherwise, we also scan the answers.
             for answer in question["answers"]:
                 answerPost = Post(answer)
                 processPost(answerPost)
+
 
 mainLoop()
