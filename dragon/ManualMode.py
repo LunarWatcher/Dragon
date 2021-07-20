@@ -43,8 +43,14 @@ def colorDiff(diff):
                 yield line
 
 
+# Counts the number of changes made to a string by aboosing ndiff and doing a character comparison
+# to count the real number of changes.
+# This should line up with how SE's built-in editor counts changes for <2k users.
+# Either way, it should substantially reduce bare minimum edits.
 def countChanges(post: Post):
-    post.unpackBody()
+    # Note: we CANNOT unpack the post yet, because it'll diff the packed oldPost, which we
+    # don't unpack. But that's fine, the changes potentially introduced from format unpacking
+    # should be non-existent.
     count = 0
     if post.isQuestion():
         for pos, string in enumerate(DiffEngine(post.oldTitle, post.title)):

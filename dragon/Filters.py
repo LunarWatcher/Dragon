@@ -8,6 +8,17 @@ ALL_ADVANCE = "(?:advance|advancing|advantage)"
 # Vim-compatible folds. These read substantially better folded
 # TODO: more, better categories
 
+# Strict phrases {{{
+def dictionaryAttack(post: Post):
+    dicti = {
+
+    }
+    for regex, repl in dicti.items():
+        post.body = re.sub(regx, repl, post.body, flags = re.MULTILINE)
+
+    return post.oldBody != post.body
+
+# }}}
 # Plain, body-only, context-free changes {{{
 
 # TODO: get rid of the overlap between noThanks and noHelp and this one
@@ -52,7 +63,7 @@ def noSolutionMeta(post: Post):
         "(?i)(?<=^|[.:!?] +)(?:(?:this *|i(?:[' ]a?m)? +)?"
             + "(solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
             + "I gave up[^.!?\n]*solutions?[^.!?\n]*)[.?!]*|"
-            + "I hope this helps",
+            + "(I )?hope(ful+y) (this|it) helps?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -74,8 +85,8 @@ def eraseSalutations(post: Post):
             + r"happy coding\W*|"
             + r"(((kind(?:est)|best)?\s*regards|cheers|thanks? *(you *)?).?\n+[0-9a-z.\-,! /]{,40}\Z)|" # TODO: harden
             + r"((can (?:any|some)\s*one|I need|please) +)+(help|hello)(?! +to) *(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
-            + r"\s*with[^.!?]{,40}\s*)*|" # TODO: harden fragment
-            + r"good\s*(morning|day|afternoon|evening|weekend|night)|"
+            + r"\s*with[^.!?]{,40}\s*)*[.?!]|" # TODO: harden fragment
+            + r"good\s*(morning|day|afternoon|evening|weekend|night)(?: *to( *(?:all|everyone|you|guys|experts) *)+)?|"
             # This one needs to be hardened, because everyone does have good use cases elsewhere
             # We want to detect "Everyone!" as a standalone word. Otherwise, we glob it into other regexes
             + r"(^|(?<=[.!?] +))everyone[.!?]|"
@@ -147,11 +158,17 @@ def noHelp(post: Post):
         return introPunct
 
     (post.body, count) = re.subn(
-        r"(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
-        + r"(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
+        r"(?i)"
+        + r"(?:"
+            + r"(^|[.?!,]\s*)" # Start of line or punctuation, including commas to match fragments
+            + r"([^.?!\n]{,15}?|" # Then we match up to 15 characters prior to the next fragment
+            + r"If some[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
+                                       # within the same sentence.
+        + r"|^)" # we also wanna match the start of the line
+        + r"(?:\s*(?:please|appreciate|pl[zs]+|any)\s*)*\s*"
         + r"(?:\s*(?:help|assist|teach|let me know)\b\s*)+\s*"
         + r"((?:me\s*(?:fix th?is|understand)|urgently\s*)"
-        + r"[^!.?\n,]{,60} *)?"
+        + r"[^!.?\n,]{,60} *|[^!.?\n,]{,15})?"
         + r"($|[!.?),]+)" # Trailing punctuation or EOL
         + r"(?: *[;:]-?[()]+)?",
         replace,
@@ -198,8 +215,24 @@ def missingAbbrevQuote(post: Post):
 
 def i(post: Post):
     (post.body, count) = re.subn(
-        r"(?<!<)\bi('|\b)(?!\.e\.?|/?>)",
-        r"I\1",
+        # v2: https://regex101.com/r/lennhz/2
+        # lookaheads and lookbehinds instead of capture groups to avoid needing to re-insert
+        # a back-reference to a good group. Also means we can get more fancy with
+        # the regex.
+        # At this point, we've fixed I'm and I've to be at least i'm and i've, which means we
+        # don't need to worry about typos.
+        # This means that anything capitalized
+        # See the regex101 for examples.
+        # This is meant to be less greedy by eliminating eliminating further problem characters.
+        #                                                vvvvvvvvv This for an instance
+        # is meant to find word bounded "i"'s that are then followed by a space or a number of
+        # characters used to recognize words.            |       |
+        # Essentially, it excludes "i" as well as 'i' and other delimiters.
+        #                                          v we admittedly have to exclude that manually
+        # because it's one of many lovely edge-cases.    |       |
+        #                                          v     v       v
+        r"(?:(?<= |^)i(?='|\b(?:[.,!?: ]|$))|(?<!<|')\bi(?=[' .,!?:]|$))(?!\.e\.?|\/?>)",
+        r"I",
         post.body
     )
     return count
@@ -210,7 +243,7 @@ def so(post: Post):
         #                                                                    otherwise, the regex matches "so" because "so " means "that" is matched, which is
         #                                                                    bad for the regex.
         #                                                                    logic.
-        r"(?i)(^|(?<=[.,!?] ))(?:ye(ah?|s)?\b|ok[iay]*\b|so\b|[ \t,-])+(?! ?that)",
+        r"(?i)(^|(?<=[.!?] ))(?:[ \t,-]*(ye(ah?|s)?\b|ok[iay]*\b|so\b)[ \t,-]*)+(?! ?that)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -282,7 +315,7 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(?i)((?<!vs|etc|i.e|e.g)[.?!] +|\A|^\n^)((?!<)[^\w,]*)([^.!?]+?)((?=[.!? ]|$))", lambda pat : pat.group(1)
+        return re.sub(r"(?i)((?<!vs|etc|i.e|e.g)[.?!] +|\A|^\n^|<)([^\w,]*)([^.!?]+?)((?=[.!? ]|$))", lambda pat : pat.group(1)
                       # \zs and \ze...
                       + pat.group(2)
                       # .capitalize() resets other capitalization, making it incredibly inappropriate
@@ -314,6 +347,7 @@ def expandCode(post: Post):
 # }}}
 
 filters = [
+    dictionaryAttack,
     # Salutations {{{
     problemSentences,
     firstQuestion,
