@@ -150,8 +150,8 @@ def noHelp(post: Post):
         r"(?i)(?:(^|[.?!,]\s*)[^.?!\n]{,15}?|^)"
         + r"(?:\s*(?:please|pl[zs]+|any)\s*)*\s*"
         + r"(?:\s*(?:help|assist|teach|let me know)\b\s*)+\s*"
-        + r"(?:me\s*(?:fix th?is|understand)|urgently\s*)?"
-        + r"[^!.?\n,]{,60} *"
+        + r"((?:me\s*(?:fix th?is|understand)|urgently\s*)"
+        + r"[^!.?\n,]{,60} *)?"
         + r"($|[!.?),]+)" # Trailing punctuation or EOL
         + r"(?: *[;:]-?[()]+)?",
         replace,
@@ -206,9 +206,14 @@ def i(post: Post):
 
 def so(post: Post):
     (post.body, count) = re.subn(
-        r"(?i)^(?:ye(ah?|s)?\b|ok[iay]*\b|so\b|[ \t,-])+",
+        #                                                                 vv god damn adaptive regex. We need to forcibly match a null space to make the regex match.
+        #                                                                    otherwise, the regex matches "so" because "so " means "that" is matched, which is
+        #                                                                    bad for the regex.
+        #                                                                    logic.
+        r"(?i)(^|(?<=[.,!?] ))(?:ye(ah?|s)?\b|ok[iay]*\b|so\b|[ \t,-])+(?! ?that)",
         "",
-        post.body
+        post.body,
+        flags = re.MULTILINE
     )
     return count
 
@@ -218,7 +223,8 @@ def fixPunctuationSpacing(post: Post):
     # Pre
     (post.body, count) = re.subn(
         #                                                 vvvvv avoid matching ", ..." (or the 'typo', ", ..")
-        "(?<![0-9]|^ *- |^> *|(?:the|an?) *(?:file *)?) +([.!?,:])(?!\.|[0-9]|\))",
+        "(?<![0-9]|^ *- |^> *|(?:the|an?) *(?:file *)?) +([.!?,:])(?!\.|[0-9]|\)|NET)",
+        #                                                                        ^^^ gotta love trademarks with a dot in it.   
         "\\1",
         post.body,
         flags = re.MULTILINE
@@ -250,6 +256,7 @@ def legalNames(post: Post):
         # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
         # but we don't have enough context to make an informed decision.
         "JavaScript": r"\b(?<!\.)(js|javascript)\b",
+        ".NET": r"\b.net\b",
     }
 
     oldBody = post.body

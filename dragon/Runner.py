@@ -104,7 +104,11 @@ def processPost(post: Post):
             if DRAGON_DEBUG:
                 print("Filter matched:", filter)
 
-    if hasAltered and checkPost(post):
+    #                 vvv ....            vvv makes sure the edit is semi-substantial.
+    #                                         substantial being "meets the minimum requirement for suggested editors"
+    #                                         though I think titles are exempt from that, but we'll require both to
+    #                                         add up to over 6 changes. The diff engine should be able to detec this
+    if hasAltered and countChanges(post) >= 6 and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if response != 0:

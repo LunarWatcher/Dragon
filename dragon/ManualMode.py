@@ -43,6 +43,18 @@ def colorDiff(diff):
                 yield line
 
 
+def countChanges(post: Post):
+    post.unpackBody()
+    count = 0
+    if post.isQuestion():
+        for pos, string in enumerate(DiffEngine(post.oldTitle, post.title)):
+            if string.startswith("-") or string.startswith("+"):
+                count += 1
+    for pos, string in enumerate(DiffEngine(post.oldBody, post.body)):
+        if string.startswith("-") or string.startswith("+"):
+            count += 1
+    return count
+
 def checkPost(post: Post):
     if post.isQuestion():
         return checkQuestion(post)
