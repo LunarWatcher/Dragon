@@ -11,10 +11,10 @@ ALL_ADVANCE = "(?:advance|advancing|advantage)"
 # Strict phrases {{{
 def dictionaryAttack(post: Post):
     dicti = {
-
+        "(?i)[*]*(edit|update) [^ \n:] *[:*]*": ""
     }
     for regex, repl in dicti.items():
-        post.body = re.sub(regx, repl, post.body, flags = re.MULTILINE)
+        post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
 
     return post.oldBody != post.body
 
@@ -256,7 +256,7 @@ def fixPunctuationSpacing(post: Post):
     # Pre
     (post.body, count) = re.subn(
         #                                                 vvvvv avoid matching ", ..." (or the 'typo', ", ..")
-        "(?<![0-9]|^ *- |^> *|(?:the|an?) *(?:file *)?) +([.!?,:])(?!\.|[0-9]|\)|NET)",
+        "(?<![0-9]|^ *- |^> *|(?:the|an?) *(?:file *)?) +([.!?,:])(?!\.|[0-9]|\)|NET|[^ \n] +file)",
         #                                                                        ^^^ gotta love trademarks with a dot in it.   
         "\\1",
         post.body,
@@ -315,7 +315,7 @@ def capitalizeSentences(post: Post):
         # out of place, and then we need to make the second group title-case.
         # The second group is a single word of length >= 1, but that's guaranteed
         # to be a single word
-        return re.sub(r"(?i)((?<!vs|etc|i.e|e.g)[.?!] +|\A|^\n^|<)([^\w,]*)([^.!?]+?)((?=[.!? ]|$))", lambda pat : pat.group(1)
+        return re.sub(r"(?i)((?<!vs|etc|i.e|e.g|</?)[.?!](?:\n? +)|\A|^\n^)([^\w,<]*)([^<.!?]+?)((?=[.!? ]|$))", lambda pat : pat.group(1)
                       # \zs and \ze...
                       + pat.group(2)
                       # .capitalize() resets other capitalization, making it incredibly inappropriate
