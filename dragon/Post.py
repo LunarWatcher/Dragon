@@ -18,6 +18,7 @@ PLACEHOLDER_FENCE_CODEBLOCK = "__dragonFenceCodeBlockPlaceholder{}__".format(ran
 PLACEHOLDER_SPACE_CODEBLOCK = "__dragonSpaceCodeBlockPlaceholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_HTML_CODEBLOCK = "__dragonHTMLCodeBlockPlaceholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_LINK = "__dragonURLPlaceholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_ALT_LINK = "__dragonAltURLPlaceholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_INLINE_CODE = "__dragonInlineCodePlaceholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_HTML_COMMENT = "___dragonHTMLCommentPlaceholder{}__".format(randomNameCoefficient)
 
@@ -33,6 +34,7 @@ class Post():
             PLACEHOLDER_SPACE_CODEBLOCK: [],
             PLACEHOLDER_HTML_CODEBLOCK: [],
             PLACEHOLDER_LINK: [],
+            PLACEHOLDER_ALT_LINK: [],
             PLACEHOLDER_INLINE_CODE: [],
             PLACEHOLDER_HTML_COMMENT: [],
         }
@@ -110,6 +112,9 @@ class Post():
         def onLink(pat):
             self.placeholders[PLACEHOLDER_LINK].append(pat.group(0))
             return PLACEHOLDER_LINK
+        def onAltLink(pat):
+            self.placeholders[PLACEHOLDER_ALT_LINK].append(pat.group(0))
+            return PLACEHOLDER_ALT_LINK
 
         def onComment(pat):
             self.placeholders[PLACEHOLDER_HTML_COMMENT].append(pat.group(0))
@@ -132,6 +137,7 @@ class Post():
         body = re.sub("(`{1,3})((?:[^`](?!\n\n))+?)(`{1,3})", onInline, body, flags = re.MULTILINE)
 
         # And links
+        body = re.sub(r"(?:^ *\n)?(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+", onAltLink, body, flags = re.MULTILINE)
         body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
                 onLink, body, flags = re.MULTILINE)
         body = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+//.*\n*)+", onLink, body, flags = re.MULTILINE)

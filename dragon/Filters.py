@@ -11,7 +11,7 @@ ALL_ADVANCE = "(?:advance|advancing|advantage)"
 # Strict phrases {{{
 def dictionaryAttack(post: Post):
     dicti = {
-        "(?i)[*]*(edit|update) [^ \n:] *[:*]*": ""
+        "(?i)[*]*(edit|update) [^ \n:] *[:*]+": ""
     }
     for regex, repl in dicti.items():
         post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
@@ -34,7 +34,7 @@ def problemSentences(post: Post):
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| |, *|- *)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks|tia) *(?!to *)( *?(you *|for *|and *)*"
+        "(?i)(^| |, *|- *)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks|tia|thx) *(?!to *)( *?(you *|for *|and *)*"
         + r"( *(a lot|"
             + "in advan\w* *(?:for any [^.!\n:?]+(?:.|$))?|"
             + "reading|"
@@ -58,13 +58,23 @@ def noSolutionMeta(post: Post):
     # and we don't wanna touch this part with a 10 meter pole
     if post.isQuestion():
         return 0
+
+    def replace(pat):
+        # See noHelp for documentation on this function
+        introPunct = pat.group(1)
+        endPunct = pat.group(2)
+        if introPunct.startswith(","):
+            return endPunct
+        return introPunct
+
     # https://regex101.com/r/E3tkhU/1
     (post.body, count) = re.subn(
-        "(?i)(?<=^|[.:!?] +)(?:(?:this *|i(?:[' ]a?m)? +)?"
-            + "(solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
-            + "I gave up[^.!?\n]*solutions?[^.!?\n]*)[.?!]*|"
-            + "(I )?hope(ful+y) (this|it) helps?",
-        "",
+        "(?i)(^|[.:!?] +)(?:(?:this *(?:will *)?|i(?:[' ]a?m)? +)?"
+            + "(?:solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
+            + "I gave up[^.!?\n]*solutions?[^.!?\n]*|"
+            + "(?:I )?hope(?:ful+y)? (?:this|it) helps? *(?:(?:others? (?:people *)?|some *(?:one|body))) *(?:else)? *(?:[^\n.,!]{,45}|$)"
+            + ")([.?!,:]*)",
+        replace,
         post.body,
         flags = re.MULTILINE
     )
@@ -72,7 +82,7 @@ def noSolutionMeta(post: Post):
 
 def noGreetings(post: Post):
     (post.body, count) = re.subn(
-        "(?i)^(hell?o|halo|hi(ya)?|he[yi]+)\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))?",
+        "(?i)^(hell?o|halo|hi(ya)?|he[yi]+)\b\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -92,7 +102,8 @@ def eraseSalutations(post: Post):
             + r"(^|(?<=[.!?] +))everyone[.!?]|"
             + r"(?i)(?:^|[.:!?]) *(?:is|have|has)(?: +(?:you|any *(?:one|body)|guy'?s?|) *)+.{,50}problem"
                 + "( with.{,20}?)([.?,!]+|$)|"
-            + r"(\b| )[:;]-?[D()8d]+(\b|$| )|\\o/|"
+            + r"(\b| )[:;]-?[D()8d]+(\b|$| )|" # Emojis
+            + r"\\o/|"
             + r"I appreciate (?:your|the) (help|assistance)( in advance)[.?!]?"
         + ")[.!?]*",
         "",
@@ -161,13 +172,16 @@ def noHelp(post: Post):
         r"(?i)"
         + r"(?:"
             + r"(^|[.?!,]\s*)" # Start of line or punctuation, including commas to match fragments
-            + r"([^.?!\n]{,15}?|" # Then we match up to 15 characters prior to the next fragment
+            + r"(?:[^.?!\n]{,15}?|" # Then we match up to 15 characters prior to the next fragment
             + r"If some[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
                                        # within the same sentence.
         + r"|^)" # we also wanna match the start of the line
         + r"(?:\s*(?:please|appreciate|pl[zs]+|any)\s*)*\s*"
+        # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
+        # Anyway, we'll let a different filter handle that clusterfuck :)
+        + r"(?<!this *will *)"
         + r"(?:\s*(?:help|assist|teach|let me know)\b\s*)+\s*"
-        + r"((?:me\s*(?:fix th?is|understand)|urgently\s*)"
+        + r"(?:(?:me\s*(?:fix th?is|understand)|urgently\s*)"
         + r"[^!.?\n,]{,60} *|[^!.?\n,]{,15})?"
         + r"($|[!.?),]+)" # Trailing punctuation or EOL
         + r"(?: *[;:]-?[()]+)?",
@@ -188,7 +202,7 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(I.{,3}|a)m.{,15}?new *(?:with|on|to|for).{,30}?(and) *,?",
+        "(?i)(P.?S.? *)(I.{,3}|a)m.{,15}?new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -308,29 +322,10 @@ def legalNames(post: Post):
 # }}}
 # Hybrid edits (questions and answers, but contains bits specific to questions) {{{
 def capitalizeSentences(post: Post):
-    # Internal function that does the replacement to avoid copy-pasta for the body and title.
-    def internalReplace(string):
-        # Gotta love how lambdas are supported.
-        # We need to re-insert the first and third groups to make sure the text isn't
-        # out of place, and then we need to make the second group title-case.
-        # The second group is a single word of length >= 1, but that's guaranteed
-        # to be a single word
-        return re.sub(r"(?i)((?<!vs|etc|i.e|e.g|</?)[.?!](?:\n? +)|\A|^\n^)([^\w,<]*)([^<.!?]+?)((?=[.!? ]|$))", lambda pat : pat.group(1)
-                      # \zs and \ze...
-                      + pat.group(2)
-                      # .capitalize() resets other capitalization, making it incredibly inappropriate
-                      + pat.group(3)[0].upper()
-                      + ("" if len(pat.group(3)) == 1 else pat.group(3)[1:]),
-                      string, flags = re.MULTILINE)
-
-    oldBody = post.body
-    oldTitle = post.title
-
-    post.body = internalReplace(post.body)
-
-    # And we do the same with the title if the post is a question
-    if post.isQuestion():
-        post.title = internalReplace(post.title)
+    return 0
+    def internalReplace(string: str):
+        # TODO: Build a state machine
+        pass
 
     return post.body != oldBody or post.title != oldTitle
 # }}}
@@ -349,6 +344,8 @@ def expandCode(post: Post):
 filters = [
     dictionaryAttack,
     # Salutations {{{
+    # And this one needs to come before help
+    noSolutionMeta,
     problemSentences,
     firstQuestion,
     noHelp,
@@ -357,7 +354,6 @@ filters = [
     eraseSalutations,
     noThanks,
     noGreetings,
-    noSolutionMeta,
     unnecessaryApologies,
     newTo,
     # }}}

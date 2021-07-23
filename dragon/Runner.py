@@ -115,7 +115,9 @@ def processPost(post: Post):
             idUpdateMap[post.postID] = response
         else:
             print("Failed to update")
-
+    elif hasAltered and DRAGON_DEBUG:
+        print("Post https://stackoverflow.com/q/{} not approved, or not enough changes.".format(post.postID))
+        print()
 def mainLoop():
     questions = []
     if len(argv) > 1:
