@@ -9,9 +9,15 @@ ALL_ADVANCE = "(?:advance|advancing|advantage)"
 # TODO: more, better categories
 
 # Strict phrases {{{
+
 def dictionaryAttack(post: Post):
+    """
+    Contains various phrases that aren't fully worthy of their own functions.
+    Might be worth migrating a lot of the basic functions to a function like this. /shrug
+    """
     dicti = {
-        "(?i)[*]*(edit|update) [^ \n:] *[:*]+": ""
+        r"(?i)^[*# ]*(edit|update) [^ \n:] *[:*]+": "", # Remove header and update taglines
+        r"([^.]|^)\.{2}(?!\.)": r"\1.", # Double periods
     }
     for regex, repl in dicti.items():
         post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
@@ -93,7 +99,7 @@ def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:"
             + r"happy coding\W*|"
-            + r"(((kind(?:est)|best)?\s*regards|cheers|thanks? *(you *)?).?\n+[0-9a-z.\-,! /]{,40}\Z)|" # TODO: harden
+            + r"(((kind(?:est)|best)?\s*regards|cheers|thanks? *(?:you *)?(?: *in advance *)?).?\n+[0-9a-z.\-,! /]{,40}\Z)|" # TODO: harden
             + r"((can (?:any|some)\s*one|I need|please) +)+(help|hello)(?! +to) *(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + r"\s*with[^.!?]{,40}\s*)*[.?!]|" # TODO: harden fragment
             + r"good\s*(morning|day|afternoon|evening|weekend|night)(?: *to( *(?:all|everyone|you|guys|experts) *)+)?|"
@@ -104,7 +110,8 @@ def eraseSalutations(post: Post):
                 + "( with.{,20}?)([.?,!]+|$)|"
             + r"(\b| )[:;]-?[D()8d]+(\b|$| )|" # Emojis
             + r"\\o/|"
-            + r"I appreciate (?:your|the) (help|assistance)( in advance)[.?!]?"
+            + r"I appreciate (?:your|the) (help|assistance)( in advance)[.?!]?|"
+            + r"please(?= *what)"
         + ")[.!?]*",
         "",
         post.body,
@@ -176,7 +183,7 @@ def noHelp(post: Post):
             + r"If some[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
                                        # within the same sentence.
         + r"|^)" # we also wanna match the start of the line
-        + r"(?:\s*(?:please|appreciate|pl[zs]+|any)\s*)*\s*"
+        + r"(?:\s*(?:please|appreciate|pl[zs]+|any|could someone)\s*,?)*\s*"
         # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *)"
@@ -269,10 +276,8 @@ def fixPunctuationSpacing(post: Post):
     # Introducing spacing after punctuation causes problems with unformatted file names.
     # Pre
     (post.body, count) = re.subn(
-        #                                                 vvvvv avoid matching ", ..." (or the 'typo', ", ..")
-        "(?<![0-9]|^ *- |^> *|(?:the|an?) *(?:file *)?) +([.!?,:])(?!\.|[0-9]|\)|NET|[^ \n] +file)",
-        #                                                                        ^^^ gotta love trademarks with a dot in it.   
-        "\\1",
+        r"(?:(^ +)| +?([,?!:)]+|\.+(?!\S)))",
+        r"\1\2",
         post.body,
         flags = re.MULTILINE
     )
@@ -321,13 +326,47 @@ def legalNames(post: Post):
 # Tag edits {{{
 # }}}
 # Hybrid edits (questions and answers, but contains bits specific to questions) {{{
+CAPITALIZE_PREFIX_BLACKLIST = [
+    # Note that these periods aren't escaped intentionally.
+    # This is to make sure we catch eg:, vs:, "etc, something else", 
+    "e.?g.?",
+    "i.?e.?",
+    "v.?s.?",
+    "etc.?`",
+]
 def capitalizeSentences(post: Post):
-    return 0
     def internalReplace(string: str):
-        # TODO: Build a state machine
-        pass
+        explode = list(string)
+        position = 0
+        hasPunctuation = True
+        while position < len(string):
+            nPos = re.search(r"[ \n]+|$", string, pos = position)
+            if nPos is None:
+                break
 
-    return post.body != oldBody or post.title != oldTitle
+            # Int conversion
+            nPos = nPos.end(0)
+
+            word = string[position:nPos]
+            if hasPunctuation:
+                # And finally...
+                while explode[position] in ['"', "'", " "]:
+                    position += 1
+                explode[position] = string[position].upper()
+
+            if re.search(r"[.!?] *$|\n{2,}|^ *[-*] +", word) and not re.search("\b(e.?g.?|i.?e.?|v.?s.?|etc.?)\b", word):
+                hasPunctuation = True
+            else:
+                hasPunctuation = False
+
+
+            position = nPos
+        return "".join(explode)
+
+    post.body = internalReplace(post.body.strip())
+    if post.isQuestion():
+        post.title = internalReplace(post.title)
+    return post.body != post.oldBody or post.title != post.oldTitle
 # }}}
 # Style edits{{{
 def expandCode(post: Post):

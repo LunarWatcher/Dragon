@@ -1,5 +1,7 @@
 # Custom
 .oauth.txt
+# Testbench for capitalization
+/test.py
 
 # Default Python stuff (https://github.com/github/gitignore)
 # Byte-compiled / optimized / DLL files

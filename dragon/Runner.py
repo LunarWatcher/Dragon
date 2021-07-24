@@ -30,7 +30,7 @@ QUESTION_FILTER = "!3xr(P-20tB)GfFE5r"
 # }}}
 # }}}
 # User interface {{{
-DRAGON_DEBUG = os.environ["DRAGON_DEBUG"] == "1"
+DRAGON_DEBUG = False if "DRAGON_DEBUG" not in os.environ else os.environ["DRAGON_DEBUG"] == "1"
 # }}}
 # Token management {{{
 oauthToken = ""

@@ -3,6 +3,9 @@
 Contains a bunch of uncaught sentences that need to be caught. Stored for later use.
 
 If a sentence contains bold, only those parts should be removed. Otherwise, the entire sentence should be.
+Multiline blocks are separated by `<hr>`s, or rather `---` in the source of this file.
+If a bit of text isn't separated by horizontal rules, lines are standalone and aren't related to the surrounding ones.
+
 
 ---
 
@@ -32,4 +35,14 @@ I hope you fixed your issue already, but if you haven't, I hope this works for y
 
 I have no idea to fix this and I hope that someone who has more knowledge about this can help me...
 
+Can anyone give me a hand on this. Really appreciated.
 
+---
+
+<!-- The fuck isn't this caught for? There's a rule in place for this. -->
+
+Thanks in advance,
+
+**Joaquim**
+
+---
