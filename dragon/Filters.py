@@ -348,7 +348,7 @@ def capitalizeSentences(post: Post):
             nPos = nPos.end(0)
 
             word = string[position:nPos]
-            if hasPunctuation:
+            if hasPunctuation and not re.search("[.?!]+(?![.?!]*$)", word):
                 # And finally...
                 while explode[position] in ['"', "'", " "]:
                     position += 1
