@@ -266,7 +266,7 @@ def so(post: Post):
         #                                                                    otherwise, the regex matches "so" because "so " means "that" is matched, which is
         #                                                                    bad for the regex.
         #                                                                    logic.
-        r"(?i)(^|(?<=[.!?] ))(?:[ \t,-]*(ye(ah?|s)?\b|ok[iay]*\b|so\b)[ \t,-]*)+(?! ?that)",
+        r"(?i)(^|(?<=[.!?] ))(?:[ \t,-]*(ye(ah?|s)?\b|ok[iay]*\b|so\b)[ \t,-]*)+(?! ?that| ?far)",
         "",
         post.body,
         flags = re.MULTILINE
