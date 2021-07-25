@@ -16,8 +16,9 @@ def dictionaryAttack(post: Post):
     Might be worth migrating a lot of the basic functions to a function like this. /shrug
     """
     dicti = {
-        r"(?i)^[*# ]*(edit|update) [^ \n:] *[:*]+": "", # Remove header and update taglines
+        r"(?i)^[*# ]*(edit|update) *[^ \n:]* *[:*]+": "", # Remove header and update taglines
         r"([^.]|^)\.{2}(?!\.)": r"\1.", # Double periods
+        r"(?i)\b(i)ts +(?=an?)": r"\1t's ", # Its a => It's a, 
     }
     for regex, repl in dicti.items():
         post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
@@ -78,7 +79,8 @@ def noSolutionMeta(post: Post):
         "(?i)(^|[.:!?] +)(?:(?:this *(?:will *)?|i(?:[' ]a?m)? +)?"
             + "(?:solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
             + "I gave up[^.!?\n]*solutions?[^.!?\n]*|"
-            + "(?:I )?hope(?:ful+y)? (?:this|it) helps? *(?:(?:others? (?:people *)?|some *(?:one|body))) *(?:else)? *(?:[^\n.,!]{,45}|$)"
+            + "(?:I )?hope(?:ful+y)? (?:this|it) helps? *(?:(?:others? (?:people *)?|some *(?:one|body))) *(?:else)? *(?:[^\n.,!]{,45}|$)|"
+            + "problem solved"
             + ")([.?!,:]*)",
         replace,
         post.body,
@@ -180,7 +182,7 @@ def noHelp(post: Post):
         + r"(?:"
             + r"(^|[.?!,]\s*)" # Start of line or punctuation, including commas to match fragments
             + r"(?:[^.?!\n]{,15}?|" # Then we match up to 15 characters prior to the next fragment
-            + r"If some[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
+            + r"I[fs] (?:some|any)[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
                                        # within the same sentence.
         + r"|^)" # we also wanna match the start of the line
         + r"(?:\s*(?:please|appreciate|pl[zs]+|any|could someone)\s*,?)*\s*"
@@ -209,7 +211,7 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(P.?S.? *)(I.{,3}|a)m.{,15}?new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
+        "(?i)(P.?S.?|also|btw)[ ,]*(I.{,3}|a)m.{,15}?(brand) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -307,7 +309,7 @@ def legalNames(post: Post):
         # We're not matching java script because it could be a writer with poor technical understanding
         # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
         # but we don't have enough context to make an informed decision.
-        "JavaScript": r"\b(?<!\.)(js|javascript)\b",
+        "JavaScript": r"\b(?<!\.|-+)(js|javascript)\b",
         ".NET": r"\b.net\b",
     }
 
@@ -324,16 +326,27 @@ def legalNames(post: Post):
 # Title edits {{{
 # }}}
 # Tag edits {{{
+
+def addTags(post: Post):
+    if not post.isQuestion() or len(post.tags) >= 5:
+        return
+
+    tags = {
+        "^python-[23]\.?[x0-9]+$": "python",
+    }
+    count = 0
+    for regex, addition in tags.items():
+        if len(post.tags) >= 5:
+            return count
+        for tag in post.tags:
+            if tag not in post.tags and re.search(regex, tag):
+                post.tags.append(addition)
+                count += 1
+
+    return count
+
 # }}}
 # Hybrid edits (questions and answers, but contains bits specific to questions) {{{
-CAPITALIZE_PREFIX_BLACKLIST = [
-    # Note that these periods aren't escaped intentionally.
-    # This is to make sure we catch eg:, vs:, "etc, something else", 
-    "e.?g.?",
-    "i.?e.?",
-    "v.?s.?",
-    "etc.?`",
-]
 def capitalizeSentences(post: Post):
     def internalReplace(string: str):
         explode = list(string)
@@ -354,7 +367,7 @@ def capitalizeSentences(post: Post):
                     position += 1
                 explode[position] = string[position].upper()
 
-            if re.search(r"[.!?] *$|\n{2,}|^ *[-*] +", word) and not re.search("\b(e.?g.?|i.?e.?|v.?s.?|etc.?)\b", word):
+            if re.search(r"[.!?] *$|\n{2,}|^ *[-*] +", word) and not re.search("(?i)\b(e.?g.?|i.?e.?|v.?s.?|etc.?)(\b| *$)", word):
                 hasPunctuation = True
             else:
                 hasPunctuation = False
@@ -413,4 +426,7 @@ filters = [
 
     # And this doesn't give two shits about capitalization, so might as well do it here
     expandCode,
+
+    # Tags, woo!
+    addTags,
 ]

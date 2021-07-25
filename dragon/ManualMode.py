@@ -48,6 +48,9 @@ def colorDiff(diff):
 # This should line up with how SE's built-in editor counts changes for <2k users.
 # Either way, it should substantially reduce bare minimum edits.
 def countChanges(post: Post):
+    if post.isQuestion() and post.tags != post.oldTags:
+        # Tags are generally always fine.
+        return 600
     # Note: we CANNOT unpack the post yet, because it'll diff the packed oldPost, which we
     # don't unpack. But that's fine, the changes potentially introduced from format unpacking
     # should be non-existent.
@@ -75,6 +78,9 @@ def checkQuestion(post: Post):
     for line in colorDiff(DiffEngine([post.oldTitle], [post.title])):
         if line == "__DRAGON_IGN__":
             continue
+        print(line)
+    print("Tags:")
+    for line in colorDiff(DiffEngine(post.oldTags, post.tags)):
         print(line)
     print("Body:")
     return checkAnswer(post)

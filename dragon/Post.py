@@ -50,16 +50,15 @@ class Post():
         if self.postType:
             # Parse out titles and tags
             self.tags = apiResponse["tags"]
+            self.oldTags = list(self.tags)
             self.title = Utils.cleanHTMLEntities(apiResponse["title"])
 
         else:
             self.tags = None
+            self.oldTags = None
             self.title = None
 
-        # Could've probably set these in the opposite order, but here we are
-        self.oldTags = self.tags
         self.oldTitle = self.title
-
         self.lastUpdate = apiResponse["last_activity_date"]
 
         self.unpacked = False
