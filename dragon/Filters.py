@@ -19,6 +19,7 @@ def dictionaryAttack(post: Post):
         r"(?i)^[*# ]*(edit|update) *[^ \n:]* *[:*]+": "", # Remove header and update taglines
         r"([^.]|^)\.{2}(?!\.)": r"\1.", # Double periods
         r"(?i)\b(i)ts +(?=an?)": r"\1t's ", # Its a => It's a, 
+        r"(?<=any? *ideas? *)please": ""
     }
     for regex, repl in dicti.items():
         post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
@@ -31,7 +32,7 @@ def dictionaryAttack(post: Post):
 # TODO: get rid of the overlap between noThanks and noHelp and this one
 def problemSentences(post: Post):
     (post.body, count) = re.subn(
-        "(?i)[^\n.!?:]*(?:thanks|thanks?[ -]you|please|pls|help|suggest(?:ions))\b(?:[ .?!]*$|[^\n.!?:]*\b(?:help|ap+reciat\w*|me|advan\w*|a ?lot|beforehand)\b[^\n.!?:]*)[.!?_*]*(?!__dragon)",
+        "(?i)[^\n.!?:]*(?:thanks|thanks?[ -]you|please|pls|help|suggest(?:ions?)?(?: *any)?)\b(?:[ .?!]*$|[^\n.!?:]*\b(?:help|ap+reciat\w*|me|advan\w*|a ?lot|beforehand)\b[^\n.!?:]*)+[.!?_*]*(?!__dragon)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -41,7 +42,7 @@ def problemSentences(post: Post):
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| |, *|- *)(any advice[^.!?]{0,80}|(many|again)[ ,]*)?(thanks?|tanks|tia|thx) *(?!to *)( *?(you *|for *|and *)*"
+        "(?i)(^| |, *|- *)(any advice[^.!?]{0,80}|(many|again)[ ,]*|kindly *(?:help|advi[szc]e|guide)[, \n]*)?(thanks?|tanks|tia|thx) *(?!to *)( *?(you *|for *|and *)*"
         + r"( *(a lot|"
             + "in advan\w* *(?:for any [^.!\n:?]+(?:.|$))?|"
             + "reading|"
@@ -79,7 +80,7 @@ def noSolutionMeta(post: Post):
         "(?i)(^|[.:!?] +)(?:(?:this *(?:will *)?|i(?:[' ]a?m)? +)?"
             + "(?:solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
             + "I gave up[^.!?\n]*solutions?[^.!?\n]*|"
-            + "(?:I )?hope(?:ful+y)? (?:this|it) helps? *(?:(?:others? (?:people *)?|some *(?:one|body))) *(?:else)? *(?:[^\n.,!]{,45}|$)|"
+            + "(?:I )?hope(?:ful+y)? (?:this|it) (helps?|works?)? *(?:(?:others? (?:people *)?|some *(?:one|body)))? *(?:else)? *[^\n.,!?]{,45}([.?!,]*|$)|"
             + "problem solved"
             + ")([.?!,:]*)",
         replace,
@@ -90,7 +91,7 @@ def noSolutionMeta(post: Post):
 
 def noGreetings(post: Post):
     (post.body, count) = re.subn(
-        "(?i)^(hell?o|halo|hi(ya)?|he[yi]+)\b\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)([.!?]*$)|(?=i.?(ha)?ve))?",
+        r"(?i)^ *(hell?o|halo|hi(ya)?|he[yi]+)\b\s*(((?:\s*guys\s*|\s*and\s*|\s*g(?:a|ir)?s\s*)+|people|everyone|all)[.!? ,]*)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -113,7 +114,8 @@ def eraseSalutations(post: Post):
             + r"(\b| )[:;]-?[D()8d]+(\b|$| )|" # Emojis
             + r"\\o/|"
             + r"I appreciate (?:your|the) (help|assistance)( in advance)[.?!]?|"
-            + r"please(?= *what)"
+            + r"please(?= *what)|"
+            + r"I? *(?:hope|wish|have) *(you)? *a? *(?:nice|productive|good|delightful+) (?:day|afternoon)[ .?!]*$"
         + ")[.!?]*",
         "",
         post.body,
@@ -134,19 +136,20 @@ def firstQuestion(post: Post):
 def unnecessaryApologies(post: Post):
     (post.body, count) = re.subn(
         # Start by dealing with the leading fragment
-        "(?i)(\s*(i'?m?\s*(am)?\s*|yeah)\s*)*(?:"
-            + "sorry|apologi[zse]{2}\s*(in " + ALL_ADVANCE + ")?"
+        r"(?i)([(])*(\s*(i'?m?\s*(am)?\s*|yeah)\s*)*(?:"
+            + r"sorry|apologi[zse]{2}\s*(in " + ALL_ADVANCE + ")?"
         + ")"
         #  Then we worry about the bit that comes after it, if there is anything
-        + "("
+        + " *("
         #              v bad grammar alternative
-            + "\s*(for|to) [^!.?]{,40}" # Handle short fragments in the same sentence
+            + "(for|to) [^!.?]{,40}|" # Handle short fragments in the same sentence
+            + r"if I[^\n.?!)]*learning[^\n?!.)]*"
         + ")?"
         # End the match at a punctuation, to make sure "Apologies in advance, I'm not blah blah blah" doesn't leave ", I'm not blah ..."
         # as a stub.
         # This is potentially only relevant in some cases, so we allow matching nothing as well.
         # This might need hardening
-        + "([.,?!]*|$)",
+        + "([.,?)!]*|$)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -180,17 +183,17 @@ def noHelp(post: Post):
     (post.body, count) = re.subn(
         r"(?i)"
         + r"(?:"
-            + r"(^|[.?!,]\s*)" # Start of line or punctuation, including commas to match fragments
+            + r"(^|[.?!,] *)" # Start of line or punctuation, including commas to match fragments
             + r"(?:[^.?!\n]{,15}?|" # Then we match up to 15 characters prior to the next fragment
-            + r"I[fs] (?:some|any)[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
-                                       # within the same sentence.
+            + r"(?:I[fs]|doe?s?) (?:some|any)[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
+                                                  # within the same sentence.
         + r"|^)" # we also wanna match the start of the line
-        + r"(?:\s*(?:please|appreciate|pl[zs]+|any|could someone)\s*,?)*\s*"
+        + r"(?:\s*(?:plea[sz]+e|(?:greatly *)?appreciated?|pli?[zs]+|any|(?:at *)all|could someone|suggest(?:ions?)?[^.,\n?!]{,30})\s*,?)*\s*"
         # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *)"
         + r"(?:\s*(?:help|assist|teach|let me know)\b\s*)+\s*"
-        + r"(?:(?:me\s*(?:fix th?is|understand)|urgently\s*)"
+        + r"(?:(?: *(?:me\s*(?:fix th?is|understand)|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all) *)+"
         + r"[^!.?\n,]{,60} *|[^!.?\n,]{,15})?"
         + r"($|[!.?),]+)" # Trailing punctuation or EOL
         + r"(?: *[;:]-?[()]+)?",
@@ -211,7 +214,7 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(P.?S.?|also|btw)[ ,]*(I.{,3}|a)m.{,15}?(brand) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
+        "(?i)(P.?S.?|also|btw|^)[ ,]*(I.{,3}|a)m.{,15}?(brand|very) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -254,7 +257,7 @@ def i(post: Post):
         #                                          v we admittedly have to exclude that manually
         # because it's one of many lovely edge-cases.    |       |
         #                                          v     v       v
-        r"(?:(?<= |^)i(?='|\b(?:[.,!?: ]|$))|(?<!<|')\bi(?=[' .,!?:]|$))(?!\.e\.?|\/?>)",
+        r"(?:(?<= |^)i(?='|\b(?:[.,!? ]|$))|(?<!<|')\bi(?=[' .,!?]|$))(?!\.e\.?|\/?>)",
         r"I",
         post.body
     )
@@ -266,7 +269,7 @@ def so(post: Post):
         #                                                                    otherwise, the regex matches "so" because "so " means "that" is matched, which is
         #                                                                    bad for the regex.
         #                                                                    logic.
-        r"(?i)(^|(?<=[.!?] ))(?:[ \t,-]*(ye(ah?|s)?\b|ok[iay]*\b|so\b)[ \t,-]*)+(?! ?that| ?far)",
+        r"(?i)(^|(?<=[.!?] ))(?:[ \t,-]*(ye(ah?|s)?\b|ok[iay]*\b|so\b)[ \t-]*)+,(?! ?that| ?far)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -278,8 +281,8 @@ def fixPunctuationSpacing(post: Post):
     # Introducing spacing after punctuation causes problems with unformatted file names.
     # Pre
     (post.body, count) = re.subn(
-        r"(?:(^ +)| +?([,?!:)]+|\.+(?!\S)))",
-        r"\1\2",
+        r"(?<!^ *)[ ]+?([,?!:)]+|[.]+(?!\S))",
+        r"\1",
         post.body,
         flags = re.MULTILINE
     )
@@ -288,35 +291,41 @@ def fixPunctuationSpacing(post: Post):
 # }}}
 # Legal names {{{
 def legalNames(post: Post):
-    # This is a function that collects all legal name changes.
-    # They're all in a single function because re.subn() doesn't
-    # fully work in cases like these.
-    # We _need_ string comparison to check for changes, so to
-    # avoid a ton of unnecessary checks, we run all the legal
-    # name fixes, _then_ compare the string to notify about
-    # edits to the body.
-    # This reduces the amount of string comparisons from len(names)
-    # to 1. Potentially insignificant, but reduces a substantial amount
-    # of operations. I consider that a win
-    names = {
-        # websites
-        "Stack Overflow": r"\bstack[\s-]*overflow\b(?!com)",
-        "GitHub": r"\bgit[\s-]*hub\b(?!com)",
-        # Generic trademarks
-        "React Native": r"\breact[\s-]native\b",
-        "jQuery": r"\bjquery\b",
-        "CSS": r"\bcss\b", "HTML": r"\bhtml\b", "Node.JS": "\bnode.?js\b",
-        # We're not matching java script because it could be a writer with poor technical understanding
-        # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
-        # but we don't have enough context to make an informed decision.
-        "JavaScript": r"\b(?<!\.|-+)(js|javascript)\b",
-        ".NET": r"\b.net\b",
-    }
+    def internalReplace(string: str):
+        # This is a function that collects all legal name changes.
+        # They're all in a single function because re.subn() doesn't
+        # fully work in cases like these.
+        # We _need_ string comparison to check for changes, so to
+        # avoid a ton of unnecessary checks, we run all the legal
+        # name fixes, _then_ compare the string to notify about
+        # edits to the body.
+        # This reduces the amount of string comparisons from len(names)
+        # to 1. Potentially insignificant, but reduces a substantial amount
+        # of operations. I consider that a win
+        names = {
+            # websites
+            "Stack Overflow": r"\bstack[\s-]*overflow\b(?!com)",
+            "GitHub": r"\bgit[\s-]*hub\b(?!com)",
+            # Generic trademarks
+            "React Native": r"\breact[\s-]native\b",
+            "jQuery": r"\bjquery\b",
+            "CSS": r"\bcss\b", "HTML": r"\bhtml\b", "Node.JS": "\bnode.?js\b",
+            # We're not matching java script because it could be a writer with poor technical understanding
+            # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
+            # but we don't have enough context to make an informed decision.
+            "JavaScript": r"\b(?<!\.|-+)(js|javascript)\b",
+            ".NET": r"\b.net\b",
+        }
 
+        for repl, regex in names.items():
+            string = re.sub("(?i)" + regex, repl, string)
+        return string
     oldBody = post.body
-
-    for repl, regex in names.items():
-        post.body = re.sub("(?i)" + regex, repl, post.body)
+    post.body = internalReplace(post.body)
+    if post.isQuestion():
+        oldTitle = post.title
+        post.title = internalReplace(post.title)
+        return oldBody != post.body or oldTitle != post.title
 
     return oldBody != post.body
 # }}}
@@ -329,7 +338,7 @@ def legalNames(post: Post):
 
 def addTags(post: Post):
     if not post.isQuestion() or len(post.tags) >= 5:
-        return
+        return 0
 
     tags = {
         "^python-[23]\.?[x0-9]+$": "python",
@@ -360,6 +369,7 @@ def capitalizeSentences(post: Post):
             # Int conversion
             nPos = nPos.end(0)
 
+            startOfLine = string[position - 1] == '\n'
             word = string[position:nPos]
             if hasPunctuation and not re.search("[.?!]+(?![.?!]*$)", word):
                 # And finally...
@@ -367,7 +377,9 @@ def capitalizeSentences(post: Post):
                     position += 1
                 explode[position] = string[position].upper()
 
-            if re.search(r"[.!?] *$|\n{2,}|^ *[-*] +", word) and not re.search("(?i)\b(e.?g.?|i.?e.?|v.?s.?|etc.?)(\b| *$)", word):
+
+
+            if re.search(r"(?<!\d)[.!?] *$|\n{2,}(?! *\*)", word) and not re.search(r"(?i)\b(e.?g.?|i.?e.?|v.?s.?|etc.?)(\b| *$)", word):
                 hasPunctuation = True
             else:
                 hasPunctuation = False
@@ -376,10 +388,13 @@ def capitalizeSentences(post: Post):
             position = nPos
         return "".join(explode)
 
+    oldBody = post.body
     post.body = internalReplace(post.body.strip())
     if post.isQuestion():
+        oldTitle = post.title
         post.title = internalReplace(post.title)
-    return post.body != post.oldBody or post.title != post.oldTitle
+        return post.body != oldBody or post.title != oldTitle
+    return post.body != oldBody
 # }}}
 # Style edits{{{
 def expandCode(post: Post):
