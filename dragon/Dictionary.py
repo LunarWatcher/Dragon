@@ -1,3 +1,5 @@
+# Note that these edits are body-only.
+# There's nothing done with the replace value, so a function or a lambda can be used if needed.
 filterDict = {
     # Noise {{{
     r"(?i)^[*# ]*(edit|update) *[^ \n:]* *[:*]+": "", # Remove header and update taglines
@@ -8,7 +10,7 @@ filterDict = {
     # }}}
     # }}}
     # Spelling/grammar {{{
-    r"(?i)(u)dpate": r"\1pdate",
+    r"(?i)(u)dpate": r"\1pdate", # 2k+ results
     r"(?i)\b(i)ts +(?=an?)": r"\1t's ", # Its a(b) => It's a(n)
     # }}}
     # Punctuation {{{

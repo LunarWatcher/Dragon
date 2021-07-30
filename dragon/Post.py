@@ -140,7 +140,7 @@ class Post():
                 onBlockSpace, body, flags = re.MULTILINE)
 
         # Inline code
-        body = re.sub("(`{1,3})((?:[^`](?!\n\n))+?)(`{1,3})", onInline, body, flags = re.MULTILINE)
+        body = re.sub("(`{1,3})(?!__dragon)((?:[^`](?!\n\n))+?)(`{1,3})", onInline, body, flags = re.MULTILINE)
 
         # And links
         body = re.sub(r"(?:^ *\n)?(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+",
@@ -166,6 +166,8 @@ class Post():
                 # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
                     # repl += "\n"
                 self.body = self.body.replace(placeholderKey.format(i), repl)
+                print(placeholderKey.format(i))
+            print(placeholderKey, len(blocks))
 
         # Prevent several unpacks.
         # Purely used because we also unpack before we publish, which we do because we want to make sure
