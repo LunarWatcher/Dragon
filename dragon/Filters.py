@@ -1,5 +1,6 @@
 import regex as re
 
+from Dictionary import filterDict
 from Post import *
 
 ALL_ADVANCE = "(?:advance|advancing|advantage)"
@@ -15,13 +16,7 @@ def dictionaryAttack(post: Post):
     Contains various phrases that aren't fully worthy of their own functions.
     Might be worth migrating a lot of the basic functions to a function like this. /shrug
     """
-    dicti = {
-        r"(?i)^[*# ]*(edit|update) *[^ \n:]* *[:*]+": "", # Remove header and update taglines
-        r"([^.]|^)\.{2}(?!\.)": r"\1.", # Double periods
-        r"(?i)\b(i)ts +(?=an?)": r"\1t's ", # Its a => It's a, 
-        r"(?<=any? *ideas? *)please": ""
-    }
-    for regex, repl in dicti.items():
+    for regex, repl in filterDict.items():
         post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
 
     return post.oldBody != post.body
@@ -192,7 +187,7 @@ def noHelp(post: Post):
         # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *)"
-        + r"(?:\s*(?:help|assist|teach|let me know)\b\s*)+\s*"
+        + r"(?:\s*(?:help|assist|teach|let me know|(?:and|or)? *guidance)\b\s*)+\s*"
         + r"(?:(?: *(?:me\s*(?:fix th?is|understand)|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all) *)+"
         + r"[^!.?\n,]{,60} *|[^!.?\n,]{,15})?"
         + r"($|[!.?),]+)" # Trailing punctuation or EOL
@@ -214,7 +209,7 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(P.?S.?|also|btw|^)[ ,]*(I.{,3}|a)m.{,15}?(brand|very) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
+        "(?i)(P.?S.?|also|btw|^)[ ,]*(I.{,3}|a)m.{,15}?(brand|very|pretty) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE

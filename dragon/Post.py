@@ -14,13 +14,10 @@ randomNameCoefficient = str(random.randint(-1e6, 1e6))
 
 # And because it's just adding a bit of randomness, it's unnecessary to generate a number for each of these.
 # That's why a single random number is used for all the placeholders.
-PLACEHOLDER_FENCE_CODEBLOCK = "__dragonFenceCodeBlockPlaceholder{}__".format(randomNameCoefficient)
-PLACEHOLDER_SPACE_CODEBLOCK = "__dragonSpaceCodeBlockPlaceholder{}__".format(randomNameCoefficient)
-PLACEHOLDER_HTML_CODEBLOCK = "__dragonHTMLCodeBlockPlaceholder{}__".format(randomNameCoefficient)
-PLACEHOLDER_LINK = "__dragonURLPlaceholder{}__".format(randomNameCoefficient)
-PLACEHOLDER_ALT_LINK = "__dragonAltURLPlaceholder{}__".format(randomNameCoefficient)
-PLACEHOLDER_INLINE_CODE = "__dragonInlineCodePlaceholder{}__".format(randomNameCoefficient)
-PLACEHOLDER_HTML_COMMENT = "___dragonHTMLCommentPlaceholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_CODE_BLOCK = "__dragonCodeBlock{{}}Placeholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_LINK = "__dragonURL{{}}Placeholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_INLINE_CODE = "__dragonInlineCode{{}}Placeholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_HTML_COMMENT = "___dragonHTMLComment{{}}Placeholder{}__".format(randomNameCoefficient)
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
@@ -29,12 +26,10 @@ class Post():
     def __init__(self, apiResponse):
         self.placeholders = {
             # I fucking hate this.
-            # C++ has spoiled me
-            PLACEHOLDER_FENCE_CODEBLOCK: [],
-            PLACEHOLDER_SPACE_CODEBLOCK: [],
-            PLACEHOLDER_HTML_CODEBLOCK: [],
+            # C++ has spoiled me with lists that default-initialize themselves.
+            # Fucking fantastic feature
+            PLACEHOLDER_CODE_BLOCK: [],
             PLACEHOLDER_LINK: [],
-            PLACEHOLDER_ALT_LINK: [],
             PLACEHOLDER_INLINE_CODE: [],
             PLACEHOLDER_HTML_COMMENT: [],
         }
@@ -87,17 +82,21 @@ class Post():
         return 0
 
     def stripBody(self, body: str):
+        forceNewline = True
         def onHTMLBlock(pat):
-            self.placeholders[PLACEHOLDER_HTML_CODEBLOCK].append(pat.group(2))
-            return pat.group(1) + PLACEHOLDER_HTML_CODEBLOCK + pat.group(3)
+            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2))
+            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
+            return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(3)
 
         def onFence(pat):
-            self.placeholders[PLACEHOLDER_FENCE_CODEBLOCK].append(pat.group(2) + pat.group(3))
-            return pat.group(1) + PLACEHOLDER_FENCE_CODEBLOCK + pat.group(4)
+            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2) + pat.group(3))
+            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
+            return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(4)
 
         def onBlockSpace(pat):
-            self.placeholders[PLACEHOLDER_SPACE_CODEBLOCK].append(pat.group(2))
-            return pat.group(1) + PLACEHOLDER_SPACE_CODEBLOCK
+            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2))
+            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
+            return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id)
 
         def onInline(pat):
             for key in self.placeholders.keys():
@@ -106,21 +105,29 @@ class Post():
                     # This regex covers some block cases, so we wanna make sure it, well, doesn't.
                     return pat.group(0)
             self.placeholders[PLACEHOLDER_INLINE_CODE].append(pat.group(2))
-            return pat.group(1) + PLACEHOLDER_INLINE_CODE + pat.group(3)
+            id = len(self.placeholders[PLACEHOLDER_INLINE_CODE]) - 1
+            return pat.group(1) + PLACEHOLDER_INLINE_CODE.format(id) + pat.group(3)
 
         def onLink(pat):
             self.placeholders[PLACEHOLDER_LINK].append(pat.group(0))
-            return PLACEHOLDER_LINK
-        def onAltLink(pat):
-            self.placeholders[PLACEHOLDER_ALT_LINK].append(pat.group(0))
-            return PLACEHOLDER_ALT_LINK
+            id = len(self.placeholders[PLACEHOLDER_LINK]) - 1
+            return PLACEHOLDER_LINK.format(id) + ("\n" if pat.group(0).endswith("\n") else "")
 
         def onComment(pat):
             self.placeholders[PLACEHOLDER_HTML_COMMENT].append(pat.group(0))
-            return PLACEHOLDER_HTML_COMMENT
+            id = len(self.placeholders[PLACEHOLDER_HTML_COMMENT]) - 1
+            return PLACEHOLDER_HTML_COMMENT.format(id)
+
+        def onSnippet(pat):
+            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(0))
+            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
+            return PLACEHOLDER_CODE_BLOCK.format(id)
 
         # We wanna remove certain bits to make sure they don't interfere with other parts of the code.
 
+        # We need to do snippets first, because these can be caught by the space filter and be bad
+        body = re.sub(r"<!-- begin snippet: .* -->\n(?:^.*$\n)*?<!-- end snippet -->",
+                      onSnippet, body, flags = re.MULTILINE)
         # Code blocks ignore quotes. These are handled separately.
         #                                                    vv gotta love regex, backreferencing group 1 to get the correct
         #                                                       close delimiter. This also helps delimit properly while editing.
@@ -136,10 +143,12 @@ class Post():
         body = re.sub("(`{1,3})((?:[^`](?!\n\n))+?)(`{1,3})", onInline, body, flags = re.MULTILINE)
 
         # And links
-        body = re.sub(r"(?:^ *\n)?(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+", onAltLink, body, flags = re.MULTILINE)
+        body = re.sub(r"(?:^ *\n)?(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+",
+                onLink, body, flags = re.MULTILINE)
         body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
                 onLink, body, flags = re.MULTILINE)
         body = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+//.*\n*)+", onLink, body, flags = re.MULTILINE)
+
 
         # And comments
         body = re.sub(r"<!--(?:.*?)-->", onComment, body, flags = re.S)
@@ -151,13 +160,13 @@ class Post():
         # Iterate the placeholder type and the blocks replaced
         for placeholderKey, blocks in self.placeholders.items():
             # Then iterate for each substitution
-            for repl in blocks:
-                # And replace the first placeholder with the key.
-                # Thanks to lists being linear containers, order is preserved.
-                if placeholderKey == PLACEHOLDER_FENCE_CODEBLOCK and not repl.endswith("\n"):
-                    # Indirect filter to expand code blocks
-                    repl += "\n"
-                self.body = self.body.replace(placeholderKey, repl, 1)
+            for i in range(0, len(blocks)):
+                repl = blocks[i]
+
+                # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
+                    # repl += "\n"
+                self.body = self.body.replace(placeholderKey.format(i), repl)
+
         # Prevent several unpacks.
         # Purely used because we also unpack before we publish, which we do because we want to make sure
         # automatic edits are allowed to pass through without needing interference.
