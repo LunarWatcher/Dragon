@@ -13,7 +13,7 @@ exitConditions = [
     "q"
 ]
 
-DRAGON_EXPAND = 0 if "DRAGON_EXPAND" not in os.environ else os.environ["DRAGON_EXPAND"]
+DRAGON_EXPAND = 0 if "DRAGON_EXPAND" not in os.environ else os.environ["DRAGON_EXPAND"] == "1"
 count: int = -2
 
 def colorDiff(diff):

@@ -78,7 +78,7 @@ def noSolutionMeta(post: Post):
             + r"I gave up[^.!?\n]*solutions?[^.!?\n]*|"
             + r"(?:I )?hope(?:ful+y)? (?:this|it) (helps?|works?)? *(?:(?:others? (?:people *)?|some *(?:one|body)))? *(?:else)? *[^\n.,!?]{,45}([.?!,]*|$)|"
             + r"problem solved"
-            + r")([.?!,:]*)",
+            + r")([.?!,:]+|$)",
         replace,
         post.body,
         flags = re.MULTILINE
@@ -96,8 +96,8 @@ def noGreetings(post: Post):
 
 def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(?:"
-            + r"happy coding\W*|"
+        "(?i)(?:(?:"
+            + r"happy coding\W*(?:guy'?s)?|"
             + r"(((kind(?:est)|best)?\s*regards|cheers|thanks? *(?:you *)?(?: *in advance *)?).?\n+[0-9a-z.\-,! /]{,40}\Z)|" # TODO: harden
             + r"((can (?:any|some)\s*one|I need|please) +)+(help|hello)(?! +to) *(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + r"\s*with[^.!?]{,40}\s*)*[.?!]|" # TODO: harden fragment
@@ -111,8 +111,8 @@ def eraseSalutations(post: Post):
             + r"\\o/|"
             + r"I appreciate (?:your|the) (help|assistance)( in advance)[.?!]?|"
             + r"please(?= *what)|"
-            + r"I? *(?:hope|wish|have) *(you)? *a? *(?:nice|productive|good|delightful+) (?:day|afternoon)[ .?!]*$"
-        + ")[.!?]*",
+            + r"I? *(?:hope|wish|have) *(you)? *a? *(?:nice|productive|good|delightful+|great) (?:day|afternoon)[ .?!]*$"
+        + ") *)+[.!?]*",
         "",
         post.body,
         flags = re.MULTILINE
@@ -188,7 +188,7 @@ def noHelp(post: Post):
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *)"
         + r"(?:\s*(?:help|assist|teach|let me know|(?:and|or)? *guidance)\b\s*)+\s*"
-        + r"(?:(?: *(?:me\s*(?:fix th?is|understand)|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all) *)+"
+        + r"(?:(?:[, ]*(?:me|fix|th?is|understand|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all|please)[, ]*)+"
             + r"[^!.?\n,]{,60} *|"
             + r"[^!.?\n,]{,15}|"
             + r"(?=.{,15} +thanks)" # This searches but doesn't match a trailing thanks. We wanna delete these fragments separately due to there being different checks.
@@ -223,11 +223,11 @@ def newTo(post: Post):
 def missingAbbrevQuote(post: Post):
     totCount = 0
     for regex, repl in [
-            (r"(?i)\b(?:i\"m|i *m(?: am)?|i'am|iam)\b", "I'm"),
+            (r"(?i)\b(?:i\"m|i *m(?: am)?|i'am)\b", "I'm"),
             (r"(?i)\b(d)oesnt\b", r"\1oesn't"),
             (r"(?i)\b(c)ant\b", r"\1an't"),
             (r"(?i)\b(w|d)ont\b", r"\1on't"),
-            (r"(?i)\bi[\" ]?ve", r"I've")
+            (r"(?i)\bi[\" ]?ve\b", r"I've")
     ]:
         (post.body, count) = re.subn(
             regex,
