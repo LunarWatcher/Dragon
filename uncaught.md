@@ -9,6 +9,8 @@ If a bit of text isn't separated by horizontal rules, lines are standalone and a
 
 ---
 
+first of all I apologize as I know this is a basic question and I tried to find clues from other similar questions to find an answer but I haven't managed to solve my problem so far.
+
 I am a complete beginner to programming and linux, so step-by-step instructions would be very helpful.
 
 I need help from both you guy's (Laravel expert and Node API Expert).So please help me.  

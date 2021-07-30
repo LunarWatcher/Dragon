@@ -147,7 +147,8 @@ def mainLoop():
         # to the question itself. We leave it up to the cache to determine what
         # needs a new sweep.
         for question in recentQuestions:
-            if "closed_date" in question:
+            #                            vvv Allow closed edits if we're supplying the IDs. These are fine because we may wanna edit them.
+            if "closed_date" in question and l == 1:
                 # Skip closed questions; editing these are unnecessary
                 # Also causes unnecessary bumping. Might as well try
                 # to reduce what we edit at least a little.

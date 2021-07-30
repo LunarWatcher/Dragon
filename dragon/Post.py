@@ -166,8 +166,6 @@ class Post():
                 # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
                     # repl += "\n"
                 self.body = self.body.replace(placeholderKey.format(i), repl)
-                print(placeholderKey.format(i))
-            print(placeholderKey, len(blocks))
 
         # Prevent several unpacks.
         # Purely used because we also unpack before we publish, which we do because we want to make sure

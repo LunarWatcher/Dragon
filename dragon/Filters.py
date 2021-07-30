@@ -37,20 +37,21 @@ def problemSentences(post: Post):
 # Kill thanks with fire
 def noThanks(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(^| |, *|- *)(any advice[^.!?]{0,80}|(many|again)[ ,]*|kindly *(?:help|advi[szc]e|guide)[, \n]*)?(thanks?|tanks|tia|thx) *(?!to *)( *?(you *|for *|and *)*"
+        r"(?i)(^| |, *|- *)((I would appreciate)? *any *(body|one)'?s? (advice|help)[^.!?]{0,80}|(many|again)[ ,]*|kindly *(?:help|advi[szc]e|guide)[, \n]*)?(thanks?|tanks|tia|thx) *(?!to *)( *?(you *|for *|and *)*"
         + r"( *(a lot|"
-            + "in advan\w* *(?:for any [^.!\n:?]+(?:.|$))?|"
-            + "reading|"
-            + "and|" # Binding
-            + "I hope (?:for|you[re']*) (?:can)? help( me out)?.|"
-            + "(?:asap|urgentl?y?) *|"
-            + "best regards|"
-            + "every *(?:one|body)"
+            + r"in advan\w* *(?:for any [^.!\n:?]+(?:.|$))?|"
+            + r"reading|"
+            + r"and|" # Binding
+            + r"I hope (?:for|you[re']*) (?:can)? help( me out)?.|"
+            + r"(?:asap|urgentl?y?) *|"
+            + r"best regards|"
+            + r"every *(?:one|body)"
         #          vv allow a single comma after the known phrases
-        + ") *)+)?"
-        + ",?[^\n.!?:,]*"
-        + "[.,?!]*"
-        + " *([:;]-?\))?\)*", # Trailing smileys
+        + r") *)+)?"
+        + r",?[^\n.!?:,]*"
+        + r"[.,?!]*"
+        + r" *([:;]-?\))?\)*" # Trailing smileys
+        + r"(\n+.{,30}$)?",
         "\n",
         post.body,
         flags = re.MULTILINE)
@@ -72,12 +73,12 @@ def noSolutionMeta(post: Post):
 
     # https://regex101.com/r/E3tkhU/1
     (post.body, count) = re.subn(
-        "(?i)(^|[.:!?] +)(?:(?:this *(?:will *)?|i(?:[' ]a?m)? +)?"
-            + "(?:solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
-            + "I gave up[^.!?\n]*solutions?[^.!?\n]*|"
-            + "(?:I )?hope(?:ful+y)? (?:this|it) (helps?|works?)? *(?:(?:others? (?:people *)?|some *(?:one|body)))? *(?:else)? *[^\n.,!?]{,45}([.?!,]*|$)|"
-            + "problem solved"
-            + ")([.?!,:]*)",
+        r"(?i)(^|[.:!?] +)(?:(?:this *(?:will *)?|i(?:[' ]a?m)? +)?"
+            + r"(?:solved?|f[io]u?nd(?:ed)?) *(?:my|the) *(?:problem|issue|error)s?|"
+            + r"I gave up[^.!?\n]*solutions?[^.!?\n]*|"
+            + r"(?:I )?hope(?:ful+y)? (?:this|it) (helps?|works?)? *(?:(?:others? (?:people *)?|some *(?:one|body)))? *(?:else)? *[^\n.,!?]{,45}([.?!,]*|$)|"
+            + r"problem solved"
+            + r")([.?!,:]*)",
         replace,
         post.body,
         flags = re.MULTILINE
@@ -136,7 +137,6 @@ def unnecessaryApologies(post: Post):
         + ")"
         #  Then we worry about the bit that comes after it, if there is anything
         + " *("
-        #              v bad grammar alternative
             + "(for|to) [^!.?]{,40}|" # Handle short fragments in the same sentence
             + r"if I[^\n.?!)]*learning[^\n?!.)]*"
         + ")?"
@@ -144,7 +144,7 @@ def unnecessaryApologies(post: Post):
         # as a stub.
         # This is potentially only relevant in some cases, so we allow matching nothing as well.
         # This might need hardening
-        + "([.,?)!]*|$)",
+        + "([.,?)!]+|$)",
         "",
         post.body,
         flags = re.MULTILINE
@@ -183,13 +183,16 @@ def noHelp(post: Post):
             + r"(?:I[fs]|doe?s?) (?:some|any)[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
                                                   # within the same sentence.
         + r"|^)" # we also wanna match the start of the line
-        + r"(?:\s*(?:plea[sz]+e|(?:greatly *)?appreciated?|pli?[zs]+|any|(?:at *)all|could someone|suggest(?:ions?)?[^.,\n?!]{,30})\s*,?)*\s*"
+        + r"(?:\s*(?:plea[sz]+e|(?:greatly *)?appreciated?|pli?[zs]+|any *(?:one|body)'?s?|(?:at *)all|could someone|suggest(?:ions?)?[^.,\n?!]{,30})\s*,?)*\s*"
         # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *)"
         + r"(?:\s*(?:help|assist|teach|let me know|(?:and|or)? *guidance)\b\s*)+\s*"
         + r"(?:(?: *(?:me\s*(?:fix th?is|understand)|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all) *)+"
-        + r"[^!.?\n,]{,60} *|[^!.?\n,]{,15})?"
+            + r"[^!.?\n,]{,60} *|"
+            + r"[^!.?\n,]{,15}|"
+            + r"(?=.{,15} +thanks)" # This searches but doesn't match a trailing thanks. We wanna delete these fragments separately due to there being different checks.
+        + ")?"
         + r"($|[!.?),]+)" # Trailing punctuation or EOL
         + r"(?: *[;:]-?[()]+)?",
         replace,
