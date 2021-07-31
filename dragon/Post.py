@@ -19,14 +19,15 @@ PLACEHOLDER_LINK = "__dragonURL{{}}Placeholder{}__".format(randomNameCoefficient
 PLACEHOLDER_INLINE_CODE = "__dragonInlineCode{{}}Placeholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_HTML_COMMENT = "___dragonHTMLComment{{}}Placeholder{}__".format(randomNameCoefficient)
 
-STANDALONE_Q_FILTER = ""
-STANDALONE_A_FILTER = ""
+STANDALONE_Q_FILTER = "!nKzQUR30W7"
+STANDALONE_A_FILTER = "!-)rKGgZWpB1r"
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
 class Post():
 
-    def __init__(self, apiResponse):
+    def __init__(self, apiResponse, count = 0):
+        self.count = count
         self.placeholders = {
             # I fucking hate this.
             # C++ has spoiled me with lists that default-initialize themselves.
@@ -69,13 +70,16 @@ class Post():
         self.unpackBody()
 
         print("Checking for conflicts...")
-        checkPost = api.fetch("{}/{}".format("questions" if self.isQuestion() else "answers", self.postID))
+        checkPost = api.fetch("{}/{}".format("questions" if self.isQuestion() else "answers", self.postID),
+                              filter = STANDALONE_Q_FILTER if self.isQuestion() else STANDALONE_A_FILTER
+        )
         if "items" not in checkPost:
             print("API failed to return the post.")
             return 0
         if checkPost["items"][0]["last_activity_date"] > self.lastUpdate:
             print("Edit conflict. Retrying question")
-            return Post(checkPost["items"][0])
+            #                                             vvv Avoid StackOverflowException. The count is checked elsewhere.
+            return Post(checkPost["items"][0], self.count + 1)
         print("Updating post...")
         if self.isQuestion():
 

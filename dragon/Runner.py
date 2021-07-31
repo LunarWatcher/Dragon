@@ -94,7 +94,7 @@ def processPost(post: Post):
         # This should only be applicable to questions.
         # We may need to filter by the event type,
         # but that's a problem for later
-        return True
+        return
     # Cache varaible to detect changes
     hasAltered: bool = False
     for filter in Filters.filters:
@@ -111,9 +111,13 @@ def processPost(post: Post):
     if hasAltered and countChanges(post) >= 6 and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
-        if response == -621:
-            print("Update failed: conflict. Retrying with new content...")
-            return False
+        if type(response) is Post:
+            if response.count > 3:
+                # Avoid StackOverflowException
+                print("Update failed: three sequential conflicts.")
+                return
+            processPost(response)
+            return # Future-proofing
         elif response != 0:
             idUpdateMap[post.postID] = response
         else:
@@ -121,7 +125,6 @@ def processPost(post: Post):
     elif hasAltered and DRAGON_DEBUG:
         print("Post https://stackoverflow.com/q/{} not approved, or not enough changes.".format(post.postID))
         print()
-    return True
 
 def mainLoop():
     questions = []
@@ -155,7 +158,9 @@ def mainLoop():
         # to the question itself. We leave it up to the cache to determine what
         # needs a new sweep.
         for question in recentQuestions:
-            #                            vvv Allow closed edits if we're supplying the IDs. These are fine because we may wanna edit them.
+            #                            vvv Allow closed edits if we're supplying the IDs.
+            #                                These are fine because we may wanna edit them.
+            #                                This is largely defensible from a debug POV.
             if "closed_date" in question and l == 1:
                 # Skip closed questions; editing these are unnecessary
                 # Also causes unnecessary bumping. Might as well try
@@ -168,8 +173,7 @@ def mainLoop():
             # Convert to a post
             questionPost = Post(question)
             # Then we check the question
-            while not processPost(questionPost):
-                continue
+            processPost(questionPost)
 
             # The answers key isn't present if there are no answers.
             if question["answer_count"] == 0:
@@ -177,10 +181,10 @@ def mainLoop():
                 continue
 
             # Otherwise, we also scan the answers.
+            #                      vvvvvvvvv this being the answer key, if that wasn't obvious
             for answer in question["answers"]:
                 answerPost = Post(answer)
-                while not processPost(answerPost):
-                    continue
+                processPost(answerPost)
 
 
 mainLoop()
