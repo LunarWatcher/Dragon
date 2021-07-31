@@ -89,9 +89,9 @@ class Post():
             return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(3)
 
         def onFence(pat):
-            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2) + pat.group(3))
+            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(3) + pat.group(4))
             id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
-            return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(4)
+            return pat.group(1) + pat.group(2) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(5)
 
         def onBlockSpace(pat):
             self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2))
@@ -133,9 +133,11 @@ class Post():
         #                                                       close delimiter. This also helps delimit properly while editing.
         #                                                       While this does mean letting fences overflow, it prevents
         #                                                       damaging code.
-        body = re.sub(r"(^[`~]{3,})([^`]*?$\n)((?:.*?\n?)+?)(\1[`~]*$|\Z)", onFence, body, flags = re.MULTILINE)
+        body = re.sub(r"^( *)([`~]{3,})([^`]*?$\n)((?:.*?\n?)+?)(\2[`~]*$|\Z)", onFence, body, flags = re.MULTILINE)
         body = re.sub("(^<code>$\n)((?:.*?\n)+?)(^</code>$)", onHTMLBlock, body, flags = re.MULTILINE)
         # This one has to be substantially more greedy
+        # TODO: figure out how we deal with nested lists with four spaces as required by regular indentation.
+        # State machine?
         body = re.sub("(^\s{1,}|\A)((?:^(?: {4,}|\t+)[^\n]*?(?:\n(?:^\n)*?|$))+)",
                 onBlockSpace, body, flags = re.MULTILINE)
 

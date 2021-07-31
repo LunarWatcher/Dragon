@@ -212,7 +212,7 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(P.?S.?|also|btw|^)[ ,]*(I.{,3}|a)m.{,15}?(brand|very|pretty) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
+        "(?i)(P.?S.?|also|btw|^)[ ,]*(I.{,3}|a)m.{,15}?(brand|very|pretty|completely) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -257,8 +257,18 @@ def i(post: Post):
         #                                          v     v       v
         r"(?:(?<= |^)i(?='|\b(?:[.,!? ]|$))|(?<!<|')\bi(?=[' .,!?]|$))(?!\.e\.?|\/?>)",
         r"I",
-        post.body
+        post.body,
+        flags = re.MULTILINE
     )
+
+    if post.isQuestion():
+        (post.title, count) = re.subn(
+            r"(?:(?<= |^)i(?='|\b(?:[.,!? ]|$))|(?<!<|')\bi(?=[' .,!?]|$))(?!\.e\.?|\/?>)",
+            r"I",
+            post.title,
+            flags = re.MULTILINE
+        )
+
     return count
 
 def so(post: Post):
@@ -307,7 +317,9 @@ def legalNames(post: Post):
             # Generic trademarks
             "React Native": r"\breact[\s-]native\b",
             "jQuery": r"\bjquery\b",
-            "CSS": r"\bcss\b", "HTML": r"\bhtml\b", "Node.JS": "\bnode.?js\b",
+            "CSS": r"(?<!\.)\bcss\b",
+            "HTML": r"(?<!\.)\bhtml\b",
+            "Node.JS": "\bnode.?js\b",
             # We're not matching java script because it could be a writer with poor technical understanding
             # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
             # but we don't have enough context to make an informed decision.
