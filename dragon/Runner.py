@@ -112,7 +112,7 @@ def processPost(post: Post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if type(response) is Post:
-            if response.count > 3:
+            if response.count > 1:
                 # Avoid StackOverflowException
                 print("Update failed: three sequential conflicts.")
                 return
