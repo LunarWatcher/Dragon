@@ -178,7 +178,7 @@ def noHelp(post: Post):
     (post.body, count) = re.subn(
         r"(?i)"
         + r"(?:"
-            + r"(^|[.?!,] *)" # Start of line or punctuation, including commas to match fragments
+            + r"(^|[.?!,] *)(?! *but)" # Start of line or punctuation, including commas to match fragments
             + r"(?:[^.?!\n]{,15}?|" # Then we match up to 15 characters prior to the next fragment
             + r"(?:I[fs]|doe?s?) (?:some|any)[^.?!\n]{,60})" # or certain requests, which we wanna expand substantially harder
                                                   # within the same sentence.
@@ -186,7 +186,7 @@ def noHelp(post: Post):
         + r"(?:\s*(?:plea[sz]+e|(?:greatly *)?appreciated?|pli?[zs]+|any *(?:one|body)'?s?|(?:at *)all|could someone|suggest(?:ions?)?[^.,\n?!]{,30})\s*,?)*\s*"
         # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
         # Anyway, we'll let a different filter handle that clusterfuck :)
-        + r"(?<!this *will *)"
+        + r"(?<!this *will *|did *n['o]*t)"
         + r"(?:\s*(?:help|assist|teach|let me know|(?:and|or)? *guidance)\b\s*)+\s*"
         + r"(?:(?:[, ]*(?:me|fix|th?is|understand|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all|please)[, ]*)+"
             + r"[^!.?\n,]{,60} *|"

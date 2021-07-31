@@ -55,7 +55,7 @@ if (oauthToken == ""):
 # }}}
 # Init API interface {{{
 print("OAuth token loaded.")
-SO = StackAPI('stackoverflow', access_token=oauthToken, key=API_TOKEN)
+SO = StackAPI('stackoverflow', access_token=oauthToken, key=API_TOKEN, version="2.3")
 SO.page_size = 100
 
 # User validation {{{
@@ -94,7 +94,7 @@ def processPost(post: Post):
         # This should only be applicable to questions.
         # We may need to filter by the event type,
         # but that's a problem for later
-        return
+        return True
     # Cache varaible to detect changes
     hasAltered: bool = False
     for filter in Filters.filters:
@@ -107,17 +107,22 @@ def processPost(post: Post):
     #                 vvv ....            vvv makes sure the edit is semi-substantial.
     #                                         substantial being "meets the minimum requirement for suggested editors"
     #                                         though I think titles are exempt from that, but we'll require both to
-    #                                         add up to over 6 changes. The diff engine should be able to detec this
+    #                                         add up to over 6 changes. The diff engine should be able to detect this
     if hasAltered and countChanges(post) >= 6 and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
-        if response != 0:
+        if response == -621:
+            print("Update failed: conflict. Retrying with new content...")
+            return False
+        elif response != 0:
             idUpdateMap[post.postID] = response
         else:
             print("Failed to update")
     elif hasAltered and DRAGON_DEBUG:
         print("Post https://stackoverflow.com/q/{} not approved, or not enough changes.".format(post.postID))
         print()
+    return True
+
 def mainLoop():
     questions = []
     if len(argv) > 1:
@@ -135,11 +140,14 @@ def mainLoop():
     # If it's false, we pop the questions array instead,
     # to get the next bit of the query.
     l = len(argv)
+    page = 2
+    alt = False
     while l == 1 or len(questions) > 0:
         # We search for questions
         # Test IDs can be inserted by appending /id1,id2,id3,... to the path.
         # Using questions instead of answers minimizes work
-        baseRequest = SO.fetch("questions" + (("/" + (",".join(questions))) if len(questions) > 0 else ""), filter = QUESTION_FILTER)
+        baseRequest = SO.fetch("questions" + (("/" + (",".join(questions))) if len(questions) > 0 else ""), page if alt else 1, filter = QUESTION_FILTER)
+        alt = not alt
         questions = []
         recentQuestions = baseRequest["items"]
         print("Remaining quota", baseRequest["quota_remaining"])
@@ -160,7 +168,8 @@ def mainLoop():
             # Convert to a post
             questionPost = Post(question)
             # Then we check the question
-            processPost(questionPost)
+            while not processPost(questionPost):
+                continue
 
             # The answers key isn't present if there are no answers.
             if question["answer_count"] == 0:
@@ -170,7 +179,8 @@ def mainLoop():
             # Otherwise, we also scan the answers.
             for answer in question["answers"]:
                 answerPost = Post(answer)
-                processPost(answerPost)
+                while not processPost(answerPost):
+                    continue
 
 
 mainLoop()

@@ -65,13 +65,23 @@ class Post():
     def publishUpdates(self, api: StackAPI, comment: str):
         self.unpackBody()
 
+        print("Checking for conflicts...")
+        checkPost = api.fetch("{}/{}".format("questions" if self.isQuestion() else "answers", self.postID))
+        if "items" not in checkPost:
+            print("API failed to return the post.")
+            return 0
+        if checkPost["items"][0]["last_activity_date"] > self.lastUpdate:
+            print("Edit conflict. Retrying question")
+            return -621
         print("Updating post...")
         if self.isQuestion():
+
             # We have a question
             resp = api.send_data("questions/{}/edit".format(self.postID),
                 body = self.body, title = self.title, tags = ",".join(self.tags),
                 comment = comment)
         else:
+
             resp = api.send_data("answers/{}/edit".format(self.postID),
                 body = self.body, comment = comment)
         if "items" in resp and len(resp["items"]) != 0:
