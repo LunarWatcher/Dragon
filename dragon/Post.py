@@ -19,6 +19,9 @@ PLACEHOLDER_LINK = "__dragonURL{{}}Placeholder{}__".format(randomNameCoefficient
 PLACEHOLDER_INLINE_CODE = "__dragonInlineCode{{}}Placeholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_HTML_COMMENT = "___dragonHTMLComment{{}}Placeholder{}__".format(randomNameCoefficient)
 
+STANDALONE_Q_FILTER = ""
+STANDALONE_A_FILTER = ""
+
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
 class Post():
@@ -72,7 +75,7 @@ class Post():
             return 0
         if checkPost["items"][0]["last_activity_date"] > self.lastUpdate:
             print("Edit conflict. Retrying question")
-            return -621
+            return Post(checkPost["items"][0])
         print("Updating post...")
         if self.isQuestion():
 

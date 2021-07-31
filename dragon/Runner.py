@@ -146,7 +146,7 @@ def mainLoop():
         # We search for questions
         # Test IDs can be inserted by appending /id1,id2,id3,... to the path.
         # Using questions instead of answers minimizes work
-        baseRequest = SO.fetch("questions" + (("/" + (",".join(questions))) if len(questions) > 0 else ""), page if alt else 1, filter = QUESTION_FILTER)
+        baseRequest = SO.fetch("questions" + (("/" + (";".join(questions))) if len(questions) > 0 else ""), page if alt else 1, filter = QUESTION_FILTER)
         alt = not alt
         questions = []
         recentQuestions = baseRequest["items"]
