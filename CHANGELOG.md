@@ -1,3 +1,8 @@
+# [Version TBA]
+
+* Prevent deletion of placeholders by thanks (primarily a problem with links)
+* Further expansion of `Dictionary.py`
+
 # v0.3.0
 
 * New file for basic replacements that don't need a separate function. Primarily meant for simple rules, but also a lot more rules.
