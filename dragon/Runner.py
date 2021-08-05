@@ -90,10 +90,17 @@ def hasPostBeenUpdated(post: Post):
 
 def processPost(post: Post):
     if not hasPostBeenUpdated(post):
-        # Skip posts that haven't been updated.
-        # This should only be applicable to questions.
-        # We may need to filter by the event type,
-        # but that's a problem for later
+        # We don't wanna re-check posts that haven't been updated since the last time
+        # Dragon edited it.
+        # Note that this is limited to each session.
+        #
+        # This is necessary for when we eventually implement proper paging, and actually
+        # burn through entire pages.
+        # A post on page 1 or 2 could recur on a later page, and we want to skip those.
+        # This largely saves time on regex processing, which may or may not slow down
+        # as the regex stack grows.
+        # So to avoid unnecessary work, we don't process posts we know haven't changed.
+        # Might be a good idea to make the update list persistent.
         return
     # Cache varaible to detect changes
     hasAltered: bool = False

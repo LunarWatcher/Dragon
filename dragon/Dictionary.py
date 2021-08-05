@@ -3,10 +3,11 @@
 filterDict = {
     # Noise {{{
     r"(?i)^[*# ]*(edit|update) *[^ \n:]* *[:*]+": "", # Remove header and update taglines
-    r"(?<=any? *ideas? *)please": "",
+    r"(?i)(?<=any? *ideas? *)please": "",
     r"(?i)my problem is (?=how)": "",
+    r"(?i)^ *hugs *$": "", # TODO: make more permissive
     # Problem complaining meta {{{
-    r"I have been (stuck|strug+ling) (with|on) this for[^\n.!?]{,12}([.?!]|$)": r"",
+    r"(?i)I have been (stuck|strug+ling) (with|on) this for[^\n.!?]{,12}([.?!]|$)": r"",
     # }}}
     # }}}
     # Spelling/grammar {{{

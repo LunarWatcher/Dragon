@@ -51,7 +51,7 @@ def noThanks(post: Post):
         + r",?[^\n.!?:,]*"
         + r"[.,?!]*"
         + r" *([:;]-?\))?\)*" # Trailing smileys
-        + r"(\n+.{,30}$)?",
+        + r"(\n+(?! *__dragon).{,30}$)?",
         "\n",
         post.body,
         flags = re.MULTILINE)
