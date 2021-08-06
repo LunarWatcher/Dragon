@@ -34,29 +34,6 @@ def problemSentences(post: Post):
     )
     return count
 
-# Kill thanks with fire
-def noThanks(post: Post):
-    (post.body, count) = re.subn(
-        r"(?i)(^| |, *|- *)((I would appreciate)? *any *(body|one)'?s? (advice|help)[^.!?]{0,80}|(many|again)[ ,]*|kindly *(?:help|advi[szc]e|guide)[, \n]*)?(thanks?|tanks|tia|thx) *(?!to *)( *?(you *|for *|and *)*"
-        + r"( *(a lot|"
-            + r"in advan\w* *(?:for any [^.!\n:?]+(?:.|$))?|"
-            + r"reading|"
-            + r"and|" # Binding
-            + r"I hope (?:for|you[re']*) (?:can)? help( me out)?.|"
-            + r"(?:asap|urgentl?y?) *|"
-            + r"best regards|"
-            + r"every *(?:one|body)"
-        #          vv allow a single comma after the known phrases
-        + r") *)+)?"
-        + r",?[^\n.!?:,]*"
-        + r"[.,?!]*"
-        + r" *([:;]-?\))?\)*" # Trailing smileys
-        + r"(\n+(?! *__dragon).{,30}$)?",
-        "\n",
-        post.body,
-        flags = re.MULTILINE)
-    return count
-
 def noSolutionMeta(post: Post):
     # This is primarily aimed at answers. If this is present in questions, the question has problems
     # and we don't wanna touch this part with a 10 meter pole
@@ -98,7 +75,7 @@ def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:(?:"
             + r"happy coding\W*(?:guy'?s)?|"
-            + r"(((kind(?:est)|best)?\s*regards|cheers|thanks? *(?:you *)?(?: *in advance *)?).?\n+[0-9a-z.\-,! /]{,40}\Z)|" # TODO: harden
+            + r"(^((kind(?:est)|best)?\s*regards|cheers|thanks? *(?:you *)?(?: *in advance *)?).?(\n+[0-9a-z.\-,! /]{,40}\Z)?)|" # TODO: harden
             + r"((can (?:any|some)\s*one|I need|please) +)+(help|hello)(?! +to) *(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + r"\s*with[^.!?]{,40}\s*)*[.?!]|" # TODO: harden fragment
             + r"good\s*(morning|day|afternoon|evening|weekend|night)(?: *to( *(?:all|everyone|you|guys|experts) *)+)?|"
@@ -187,8 +164,8 @@ def noHelp(post: Post):
         # Edge-case: "this will help you" may be appropriate. Or really not, because it's not guaranteed to.
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *|did *n['o]*t)"
-        + r"(?:\s*(?:help|assist|teach|let me know|(?:and|or)? *guidance)\b\s*)+\s*"
-        + r"(?:(?:[, ]*(?:me|fix|th?is|understand|urgently\s*|(?:will|would) be|greatly|direly|appreciated|at all|please)[, ]*)+"
+        + r"(?:\s*(?:help|assist|teach|(?:and|or)? *guidance)\b\s*)+\s*"
+        + r"(?:(?:[, ]*(?:me|fix|th?is|understand|urgently\s*|(?:will|would) (?:be|mean)|greatly|direly|appreciated|at all|please)[, ]*)+"
             + r"[^!.?\n,]{,60} *|"
             + r"[^!.?\n,]{,15}|"
             + r"(?=.{,15} +thanks)" # This searches but doesn't match a trailing thanks. We wanna delete these fragments separately due to there being different checks.
@@ -212,7 +189,9 @@ def purgeGitMemory(post: Post):
 
 def newTo(post: Post):
     (post.body, count) = re.subn(
-        "(?i)(P.?S.?|also|btw|^)[ ,]*(I.{,3}|a)m.{,15}?(brand|very|pretty|completely) *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
+        r"(?i)(P.?S.?|also|btw|^)"
+        + r"[ ,]*(I.{,3}|a)m.{,15}?"
+        + r"(brand|very|pretty|completely)? *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -255,7 +234,7 @@ def i(post: Post):
         #                                          v we admittedly have to exclude that manually
         # because it's one of many lovely edge-cases.    |       |
         #                                          v     v       v
-        r"(?:(?<= |^)i(?='|\b(?:[.,!? ]|$))|(?<!<|')\bi(?=[' .,!?]|$))(?!\.e\.?|\/?>)",
+        r"(?:(?<= |^ *)i(?='|\b(?:[.,!? ]|$))|(?<!<|')\bi(?=[' .,!?]|$))(?!\.e\.?|\/?>)",
         r"I",
         post.body,
         flags = re.MULTILINE
@@ -429,7 +408,6 @@ filters = [
     # This one needs priority over regular "thanks"
     # to properly erase "thanks,\n\nMyName"
     eraseSalutations,
-    noThanks,
     noGreetings,
     unnecessaryApologies,
     newTo,

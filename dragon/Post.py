@@ -1,4 +1,5 @@
-from stackapi import StackAPI
+from stackapi import StackAPI, StackAPIError
+from colorama import Fore, Back
 
 import regex as re
 import random
@@ -21,6 +22,14 @@ PLACEHOLDER_HTML_COMMENT = "___dragonHTMLComment{{}}Placeholder{}__".format(rand
 
 STANDALONE_Q_FILTER = "!nKzQUR30W7"
 STANDALONE_A_FILTER = "!-)rKGgZWpB1r"
+
+STATE_NEWLINE        = 0
+STATE_BLANK_LINE     = 1
+STATE_IN_LINE        = 2
+STATE_IN_CODE_TAG    = 3
+STATE_IN_FENCE       = 4
+STATE_IN_SPACE_BLOCK = 5
+STATE_HAS_BLANK      = 6
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
@@ -81,16 +90,22 @@ class Post():
             #                                             vvv Avoid StackOverflowException. The count is checked elsewhere.
             return Post(checkPost["items"][0], self.count + 1)
         print("Updating post...")
-        if self.isQuestion():
+        try:
+            if self.isQuestion():
 
-            # We have a question
-            resp = api.send_data("questions/{}/edit".format(self.postID),
-                body = self.body, title = self.title, tags = ",".join(self.tags),
-                comment = comment)
-        else:
+                # We have a question
+                resp = api.send_data("questions/{}/edit".format(self.postID),
+                    body = self.body, title = self.title, tags = ",".join(self.tags),
+                    comment = comment)
+            else:
 
-            resp = api.send_data("answers/{}/edit".format(self.postID),
-                body = self.body, comment = comment)
+                resp = api.send_data("answers/{}/edit".format(self.postID),
+                    body = self.body, comment = comment)
+        except StackAPIError as e:
+            if "Title cannot contain" in e.message:
+                print(Fore.RED + "Error from the API: invalid title. Human edit required" + Fore.RESET)
+
+            return 0
         if "items" in resp and len(resp["items"]) != 0:
             return resp["items"][0]["last_activity_date"]
         else:
@@ -99,79 +114,77 @@ class Post():
         return 0
 
     def stripBody(self, body: str):
-        forceNewline = True
-        def onHTMLBlock(pat):
-            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2))
-            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
-            return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(3)
+        modBod = ""
+        cache = ""
 
-        def onFence(pat):
-            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(3) + pat.group(4))
-            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
-            return pat.group(1) + pat.group(2) + PLACEHOLDER_CODE_BLOCK.format(id) + pat.group(5)
+        state = STATE_NEWLINE
+        levelMultiplier = 1
 
-        def onBlockSpace(pat):
-            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(2))
-            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
-            return pat.group(1) + PLACEHOLDER_CODE_BLOCK.format(id)
+        i = 0
+        while i < len(body):
+            if state == STATE_NEWLINE or state == STATE_BLANK_LINE:
+                if body[i] == "\n":
+                    modBod += body[i]
+                    state = STATE_BLANK_LINE
+                    i += 1
+                    continue
 
-        def onInline(pat):
-            for key in self.placeholders.keys():
-                if key in pat.group(0):
-                    # Prevent stacking multiple.
-                    # This regex covers some block cases, so we wanna make sure it, well, doesn't.
-                    return pat.group(0)
-            self.placeholders[PLACEHOLDER_INLINE_CODE].append(pat.group(2))
-            id = len(self.placeholders[PLACEHOLDER_INLINE_CODE]) - 1
-            return pat.group(1) + PLACEHOLDER_INLINE_CODE.format(id) + pat.group(3)
+                if (body[i:i + 4 * levelMultiplier] == " " * 4 * levelMultiplier
+                        and (i == 0 or STATE_BLANK_LINE)):
+                    state = STATE_IN_SPACE_BLOCK
 
-        def onLink(pat):
-            self.placeholders[PLACEHOLDER_LINK].append(pat.group(0))
-            id = len(self.placeholders[PLACEHOLDER_LINK]) - 1
-            return PLACEHOLDER_LINK.format(id) + ("\n" if pat.group(0).endswith("\n") else "")
+                    modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
+                    findNewline = body.find('\n', i)
+                    cache += body[i:findNewline ]
+                    i = findNewline
+                    continue
+                else:
+                    modBod += body[i]
+                    state = STATE_IN_LINE if body[i] != '\n' else STATE_NEWLINE
+            elif state == STATE_IN_LINE:
+                char = body[i]
+                if char == "\n":
+                    state = STATE_NEWLINE
+                modBod += char
+            elif state == STATE_IN_SPACE_BLOCK:
+                findNewline = body.find('\n', i)
+                line = body[i:findNewline + 1]
 
-        def onComment(pat):
-            self.placeholders[PLACEHOLDER_HTML_COMMENT].append(pat.group(0))
-            id = len(self.placeholders[PLACEHOLDER_HTML_COMMENT]) - 1
-            return PLACEHOLDER_HTML_COMMENT.format(id)
+                if re.search("^ {" + str(4 * levelMultiplier) + "}.*$", line):
+                    i = findNewline + 1
+                    cache += line
+                    continue
 
-        def onSnippet(pat):
-            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(0))
-            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
-            return PLACEHOLDER_CODE_BLOCK.format(id)
+                else:
+                    if line == "\n":
+                        off = i
+                        intrm = "\n"
+                        while off < len(body) and body[off] == "\n":
+                            intrm += "\n"
+                            off += 1
+                        if re.search("^" + (" " * 4 * levelMultiplier) + ".*$", body[off:body.find('\n', off)]):
+                            i = off
+                            cache += intrm
+                            continue
+                    self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache)
+                    print("---")
+                    print(cache)
+                    print("---")
+                    cache = ""
+                    modBod += line
+                    state = STATE_NEWLINE
+                    continue
 
-        # We wanna remove certain bits to make sure they don't interfere with other parts of the code.
+            i += 1
 
-        # We need to do snippets first, because these can be caught by the space filter and be bad
-        body = re.sub(r"<!-- begin snippet: .* -->\n(?:^.*$\n)*?<!-- end snippet -->",
-                      onSnippet, body, flags = re.MULTILINE)
-        # Code blocks ignore quotes. These are handled separately.
-        #                                                    vv gotta love regex, backreferencing group 1 to get the correct
-        #                                                       close delimiter. This also helps delimit properly while editing.
-        #                                                       While this does mean letting fences overflow, it prevents
-        #                                                       damaging code.
-        body = re.sub(r"^( *)([`~]{3,})([^`]*?$\n)((?:.*?\n?)+?)(\2[`~]*$|\Z)", onFence, body, flags = re.MULTILINE)
-        body = re.sub("(^<code>$\n)((?:.*?\n)+?)(^</code>$)", onHTMLBlock, body, flags = re.MULTILINE)
-        # This one has to be substantially more greedy
-        # TODO: figure out how we deal with nested lists with four spaces as required by regular indentation.
-        # State machine?
-        body = re.sub("(^\s{1,}|\A)((?:^(?: {4,}|\t+)[^\n]*?(?:\n(?:^\n)*?|$))+)",
-                onBlockSpace, body, flags = re.MULTILINE)
+        print (modBod)
+        self.body = modBod
+        self.unpacked = False
+        self.unpackBody()
+        print(self.body)
+        exit()
 
-        # Inline code
-        body = re.sub("(`{1,3})(?!__dragon)((?:[^`](?!\n\n))+?)(`{1,3})", onInline, body, flags = re.MULTILINE)
-
-        # And links
-        body = re.sub(r"(?:^ *\n)?(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+",
-                onLink, body, flags = re.MULTILINE)
-        body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
-                onLink, body, flags = re.MULTILINE)
-        body = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+//.*\n*)+", onLink, body, flags = re.MULTILINE)
-
-
-        # And comments
-        body = re.sub(r"<!--(?:.*?)-->", onComment, body, flags = re.S)
-        return body
+        return modBod
 
     def unpackBody(self):
         if self.unpacked:
