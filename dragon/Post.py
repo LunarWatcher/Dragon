@@ -114,6 +114,8 @@ class Post():
         return 0
 
     def stripBody(self, body: str):
+        # Tabs are converted to spaces anyway, and this makes processing substantially easier.
+        body = body.replace("\t", "    ");
         modBod = ""
         cache = ""
 
@@ -121,8 +123,10 @@ class Post():
         levelMultiplier = 1
 
         i = 0
+        flag = False
         while i < len(body):
             if state == STATE_NEWLINE or state == STATE_BLANK_LINE:
+                flag = False
                 if body[i] == "\n":
                     modBod += body[i]
                     state = STATE_BLANK_LINE
@@ -150,28 +154,38 @@ class Post():
                 findNewline = body.find('\n', i)
                 line = body[i:findNewline + 1]
 
+                if line == "\n":
+                    flag = True
                 if re.search("^ {" + str(4 * levelMultiplier) + "}.*$", line):
+                    if line == "\n":
+                        raise RuntimeError("HOW?!")
                     i = findNewline + 1
                     cache += line
+                    if flag:
+                        print(cache, end = "---\n")
                     continue
 
                 else:
                     if line == "\n":
                         off = i
-                        intrm = "\n"
+                        intrm = ""
                         while off < len(body) and body[off] == "\n":
                             intrm += "\n"
                             off += 1
-                        if re.search("^" + (" " * 4 * levelMultiplier) + ".*$", body[off:body.find('\n', off)]):
+                        if re.search("^ {" + str(4 * levelMultiplier) + "}.*$", body[off:body.find('\n', off) + 1]):
                             i = off
                             cache += intrm
+                            print("Match found")
                             continue
+                        print("Match not found")
+                    # Trim \n
+                    if cache.endswith("\n"):
+                        modBod += "\n"
+                        cache = cache[:-1]
+
                     self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache)
-                    print("---")
-                    print(cache)
-                    print("---")
+
                     cache = ""
-                    modBod += line
                     state = STATE_NEWLINE
                     continue
 
@@ -181,7 +195,7 @@ class Post():
         self.body = modBod
         self.unpacked = False
         self.unpackBody()
-        print(self.body)
+        print("Good?", self.body == body)
         exit()
 
         return modBod
