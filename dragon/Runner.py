@@ -120,8 +120,8 @@ def processPost(post: Post):
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if type(response) is Post:
             if response.count > 1:
-                # Avoid StackOverflowException
-                print("Update failed: three sequential conflicts.")
+                # Avoid StackOverflowException and useless API calls
+                print("Update failed: two sequential conflicts.")
                 return
             processPost(response)
             return # Future-proofing

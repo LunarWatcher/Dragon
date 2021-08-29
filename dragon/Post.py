@@ -30,6 +30,7 @@ STATE_IN_CODE_TAG    = 3
 STATE_IN_FENCE       = 4
 STATE_IN_SPACE_BLOCK = 5
 STATE_HAS_BLANK      = 6
+STATE_INLINE_CODE    = 7
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
@@ -122,7 +123,10 @@ class Post():
         state = STATE_NEWLINE
         levelMultiplier = 1
 
+        openSize = -1
+
         i = 0
+        print(len(body))
         while i < len(body):
             if state == STATE_NEWLINE or state == STATE_BLANK_LINE:
                 if body[i] == "\n":
@@ -131,18 +135,58 @@ class Post():
                     i += 1
                     continue
 
-                if (body[i:i + 4 * levelMultiplier] == " " * 4 * levelMultiplier
-                        and (i == 0 or STATE_BLANK_LINE)):
+                if ((i == 0 or state == STATE_BLANK_LINE) and body[i:i + 4 * levelMultiplier] == " " * 4 * levelMultiplier):
                     state = STATE_IN_SPACE_BLOCK
 
                     modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
                     findNewline = body.find('\n', i)
-                    cache += body[i:findNewline ]
+                    # We don't wanna glob the newline here.
+                    cache += body[i:findNewline]
                     i = findNewline
                     continue
+                elif body[i] in ['`', '~']:
+
+                    # Code fencies are a lot tricker, unfortunately.
+                    # ` at the start of a line may in fact be referring to inline code instead of a proper fence.
+                    # ``` isn't enough to filter it out, because ```this is still valid inline code```.
+                    # So here's what we'll do:
+                    # We'll get the line
+                    newlineTarget = body.find('\n', i)
+                    line = body[i:newlineTarget + 1]
+                    # We set this to 0 either way, because we do have some type of open.
+                    openSize = 0
+                    # Counting is then the same thing.
+                    # What we use for it is then not our problem.
+                    print(line, end = "")
+                    for char in line:
+                        if char in ['`', '~']:
+                            openSize += 1;
+                        else:
+                            break
+                    i += openSize
+                    # We then match this to regex
+                    # Note that we've eliminated spaces by now.
+                    if re.search("^[`~]+[^`~]$", line):
+                        # We have a fence, or a "fence" - i.e. invalid single-quote
+                        state = STATE_IN_FENCE
+
+                        # We add the entire line to our cache
+                        # We add the backticks to the resulting body
+                        modBod += line[0:openSize]
+                        # And of course the placeholder.
+                        # This may result in false positives for two-line blocks wrt. the code expansion filter.
+                        modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
+                    else:
+                        state = STATE_INLINE_CODE
+                        # We don't need to do anything else. We leave processing to the appropriate
+                        # state to avoid repetition.
+                    continue
+
                 else:
                     modBod += body[i]
-                    state = STATE_IN_LINE if body[i] != '\n' else STATE_NEWLINE
+                    #                                                       vvv we preserve the newline state if we only get spaces
+                    # There's not gonna be a code block at this point anyway, thanks to our previous conversion of tabs to spaces.
+                    state = STATE_NEWLINE if body[i] == " " and state == STATE_NEWLINE else STATE_BLANK_LINE if body[i] == '\n' else STATE_IN_LINE
             elif state == STATE_IN_LINE:
                 char = body[i]
                 if char == "\n":
@@ -180,6 +224,29 @@ class Post():
                     cache = ""
                     state = STATE_NEWLINE
                     continue
+            elif state == STATE_IN_FENCE:
+                findNewline = body.find('\n', i)
+                if findNewline == -1:
+                    findNewline = len(body)
+                line = body[i:findNewline + 1]
+                cache += line
+                if re.match('^ *[`~]{' + str(openSize) + '}$', line):
+                    state == STATE_NEWLINE
+                    modBod += cache
+                    openSize = -1
+
+                i = findNewline + 1
+                continue
+            elif state == STATE_INLINE_CODE:
+                # This is really fucking easy.
+                # We already have the count, so:
+                newIdx = body.find('`' * openSize, i + openSize)
+                #                                           vvv avoid matching the open as the close
+                fragment = body[i:newIdx]
+                state = STATE_IN_LINE
+                # Seems about right
+                i = newIdx + openSize + 1
+                openSize == -1
 
             i += 1
 
@@ -194,6 +261,7 @@ class Post():
             for i in range(0, len(blocks)):
                 repl = blocks[i]
 
+                # TODO: hook up link filters here
                 # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
                     # repl += "\n"
                 self.body = self.body.replace(placeholderKey.format(i), repl)

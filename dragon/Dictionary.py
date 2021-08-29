@@ -57,3 +57,18 @@ filterDict = {
     # No category (should not be used - make new categories where possible) {{{
     # }}}
 }
+
+# We want to filter certain links.
+# This is to avoid link rot in a pattern-based way.
+# An example of this is https://facebook.github.io/react-native/docs/text.html#limited-style-inheritance,
+# which has been moved to https://reactnative.dev/docs/text#limited-style-inheritance.
+# We can regex-replace the link and avoid link rot when facebook axes facebook.github.io/react-native/docs
+# This also lets us remove certain links for when we inevitably stumble over link shorteners.
+# We can unpack the link shorteners automatically.
+# Unfortunately, link rot is complex and may be impossible to do automatically.
+# When we're already editing, it may be worth checking for dead links on posts >= 6 months (?),
+# but that extends beyond link filters. Would need to be done when unpacking,
+# but that's another can of worms.
+linkFilters = {
+    "facebook\.github\.io/react-native/docs": "reactnative.dev/docs",
+}

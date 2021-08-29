@@ -1,6 +1,13 @@
 import unittest
 
+import random
+# Manipulate the seed for random consistency
+random.seed(69)
+
+import dragon.Post
+
 from dragon.Post import Post
+
 
 def mockAnswer(bodyMarkdown):
     return {
@@ -10,6 +17,9 @@ def mockAnswer(bodyMarkdown):
     }
 
 class TestMarkdownParsing(unittest.TestCase):
+    def __init__(self, obj):
+        super().__init__(obj)
+        self.maxDiff = None
 
     # We only test "everything" for now.
     # In the future, adding edge-cases here may be necessary.
@@ -27,7 +37,7 @@ This is plain text after a blank line.
 And here's some text
 
     and another block
-Followed by text 
+Followed by text
 
 And here's even more text
 
@@ -54,6 +64,41 @@ also a [link](https://www.youtube.com/watch?v=dQw4w9WgXcQ) (inline), and another
 [never-gonna-give-you-up]: https://www.youtube.com/watch?v=dQw4w9WgXcQ"""
 
         post = Post(mockAnswer(mPost))
+        print(post.body)
+        self.assertEqual("""This is a test for a crude markdown "parser" (which is really more of an identifier `than anything else`, but I have a lot of edge-cases to test)
+
+This is plain text.
+This is plain text after a newline.
+
+This is plain text after a blank line.
+    This is not a code block
+
+__dragonCodeBlock0Placeholder434957__
+
+And here's some text
+
+__dragonCodeBlock1Placeholder434957__
+Followed by text
+
+And here's even more text
+
+__dragonCodeBlock2Placeholder434957__
+__dragonCodeBlock3Placeholder434957__
+__dragonCodeBlock4Placeholder434957__
+```With an inline triple start```, followed by ``double`` and `single`, and some random **bold**, because why not?
+
+
+also a [link](https://www.youtube.com/watch?v=dQw4w9WgXcQ) (inline), and another [link][never-gonna-give-you-up] that's named.
+
+![This is not an image](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+
+[![And neither is this](https://www.youtube.com/watch?v=dQw4w9WgXcQ)](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+
+... but pretends to be one on a TV show.:tm:
+
+
+
+[never-gonna-give-you-up]: https://www.youtube.com/watch?v=dQw4w9WgXcQ""", post.body)
         post.unpackBody()
         self.assertEqual(mPost, post.body)
 
