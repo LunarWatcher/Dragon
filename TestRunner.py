@@ -87,7 +87,6 @@ __dragonCodeBlock3Placeholder434957__
 __dragonCodeBlock4Placeholder434957__
 ```With an inline triple start```, followed by ``double`` and `single`, and some random **bold**, because why not?
 
-
 also a [link](https://www.youtube.com/watch?v=dQw4w9WgXcQ) (inline), and another [link][never-gonna-give-you-up] that's named.
 
 ![This is not an image](https://www.youtube.com/watch?v=dQw4w9WgXcQ)

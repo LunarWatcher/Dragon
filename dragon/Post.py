@@ -126,7 +126,7 @@ class Post():
         openSize = -1
 
         i = 0
-        print(len(body))
+
         while i < len(body):
             if state == STATE_NEWLINE or state == STATE_BLANK_LINE:
                 if body[i] == "\n":
@@ -157,22 +157,22 @@ class Post():
                     openSize = 0
                     # Counting is then the same thing.
                     # What we use for it is then not our problem.
-                    print(line, end = "")
                     for char in line:
                         if char in ['`', '~']:
                             openSize += 1;
                         else:
                             break
-                    i += openSize
                     # We then match this to regex
                     # Note that we've eliminated spaces by now.
-                    if re.search("^[`~]+[^`~]$", line):
+                    if re.search("^[`~]+[^`~]*$", line):
+                        i = newlineTarget + 1
+                        print(line)
                         # We have a fence, or a "fence" - i.e. invalid single-quote
                         state = STATE_IN_FENCE
 
                         # We add the entire line to our cache
                         # We add the backticks to the resulting body
-                        modBod += line[0:openSize]
+                        cache += line
                         # And of course the placeholder.
                         # This may result in false positives for two-line blocks wrt. the code expansion filter.
                         modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
@@ -231,13 +231,19 @@ class Post():
                 line = body[i:findNewline + 1]
                 cache += line
                 if re.match('^ *[`~]{' + str(openSize) + '}$', line):
-                    state == STATE_NEWLINE
-                    modBod += cache
+                    state = STATE_NEWLINE
+                    modBod += "\n"
+                    self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache[:-1])
+
+                    cache = ""
                     openSize = -1
 
                 i = findNewline + 1
                 continue
             elif state == STATE_INLINE_CODE:
+                modBod += body[i]
+                i += 1
+                continue
                 # This is really fucking easy.
                 # We already have the count, so:
                 newIdx = body.find('`' * openSize, i + openSize)
@@ -246,7 +252,7 @@ class Post():
                 state = STATE_IN_LINE
                 # Seems about right
                 i = newIdx + openSize + 1
-                openSize == -1
+                openSize = -1
 
             i += 1
 
