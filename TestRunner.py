@@ -59,13 +59,14 @@ also a [link](https://www.youtube.com/watch?v=dQw4w9WgXcQ) (inline), and another
 
 ... but pretends to be one on a TV show.:tm:
 
-
+<!--
+Hi btw
+-->
 
 [never-gonna-give-you-up]: https://www.youtube.com/watch?v=dQw4w9WgXcQ"""
 
         post = Post(mockAnswer(mPost))
-        print(post.body)
-        self.assertEqual("""This is a test for a crude markdown "parser" (which is really more of an identifier `than anything else`, but I have a lot of edge-cases to test)
+        self.assertEqual("""This is a test for a crude markdown "parser" (which is really more of an identifier __dragonInlineCode0Placeholder434957__, but I have a lot of edge-cases to test)
 
 This is plain text.
 This is plain text after a newline.
@@ -85,19 +86,19 @@ And here's even more text
 __dragonCodeBlock2Placeholder434957__
 __dragonCodeBlock3Placeholder434957__
 __dragonCodeBlock4Placeholder434957__
-```With an inline triple start```, followed by ``double`` and `single`, and some random **bold**, because why not?
+__dragonInlineCode1Placeholder434957__, followed by __dragonInlineCode2Placeholder434957__ and __dragonInlineCode3Placeholder434957__, and some random **bold**, because why not?
 
-also a [link](https://www.youtube.com/watch?v=dQw4w9WgXcQ) (inline), and another [link][never-gonna-give-you-up] that's named.
+also a __dragonURL1Placeholder434957__ (inline), and another __dragonURL2Placeholder434957__ that's named.
 
-![This is not an image](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+__dragonURL3Placeholder434957__
 
-[![And neither is this](https://www.youtube.com/watch?v=dQw4w9WgXcQ)](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+__dragonURL4Placeholder434957__
 
 ... but pretends to be one on a TV show.:tm:
 
+___dragonHTMLComment0Placeholder434957__
 
-
-[never-gonna-give-you-up]: https://www.youtube.com/watch?v=dQw4w9WgXcQ""", post.body)
+__dragonURL0Placeholder434957__""", post.body)
         post.unpackBody()
         self.assertEqual(mPost, post.body)
 

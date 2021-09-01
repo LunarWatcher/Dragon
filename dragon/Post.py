@@ -115,8 +115,36 @@ class Post():
         return 0
 
     def stripBody(self, body: str):
+        def onLink(pat):
+            self.placeholders[PLACEHOLDER_LINK].append(pat.group(0))
+            id = len(self.placeholders[PLACEHOLDER_LINK]) - 1
+            return PLACEHOLDER_LINK.format(id) + ("\n" if pat.group(0).endswith("\n") else "")
+        def onComment(pat):
+            self.placeholders[PLACEHOLDER_HTML_COMMENT].append(pat.group(0))
+            id = len(self.placeholders[PLACEHOLDER_HTML_COMMENT]) - 1
+            return PLACEHOLDER_HTML_COMMENT.format(id)
+
+        def onSnippet(pat):
+            self.placeholders[PLACEHOLDER_CODE_BLOCK].append(pat.group(0))
+            id = len(self.placeholders[PLACEHOLDER_CODE_BLOCK]) - 1
+            return PLACEHOLDER_CODE_BLOCK.format(id)
+        def onInline(pat):
+            self.placeholders[PLACEHOLDER_INLINE_CODE].append(pat.group(0))
+            id = len(self.placeholders[PLACEHOLDER_INLINE_CODE]) - 1
+            return PLACEHOLDER_INLINE_CODE.format(id)
         # Tabs are converted to spaces anyway, and this makes processing substantially easier.
         body = body.replace("\t", "    ");
+        # Links are insanely simple. We can regex these.
+        body = re.sub(r"^ *(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+",
+                onLink, body, flags = re.MULTILINE)
+        body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
+                onLink, body, flags = re.MULTILINE)
+        body = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+//.*\n*)+", onLink, body, flags = re.MULTILINE)
+        # And let's tank these too
+        body = re.sub(r"<!-- begin snippet: .* -->\n(?:^.*$\n)*?<!-- end snippet -->",
+                      onSnippet, body, flags = re.MULTILINE)
+        body = re.sub(r"<!--(?:.*?)-->", onComment, body, flags = re.S)
+
         modBod = ""
         cache = ""
 
@@ -166,7 +194,6 @@ class Post():
                     # Note that we've eliminated spaces by now.
                     if re.search("^[`~]+[^`~]*$", line):
                         i = newlineTarget + 1
-                        print(line)
                         # We have a fence, or a "fence" - i.e. invalid single-quote
                         state = STATE_IN_FENCE
 
@@ -255,6 +282,9 @@ class Post():
                 openSize = -1
 
             i += 1
+
+        # Then we can do other code at the end. Brilliant!
+        modBod = re.sub("(`{1,3})(?!__dragon)((?:[^`](?!\n\n))+?)(`{1,3})", onInline, modBod, flags = re.MULTILINE)
 
         return modBod
 
