@@ -152,6 +152,8 @@ class Post():
         i = 0
 
         while i < len(body):
+            if i < 0:
+                raise RuntimeError("Edge-case on post " + str(self.postID) + "\n---\n" + self.rawOldBody)
             if state == STATE_NEWLINE or state == STATE_BLANK_LINE:
                 if body[i] == "\n":
                     modBod += body[i]
@@ -164,6 +166,8 @@ class Post():
 
                     modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
                     findNewline = body.find('\n', i)
+                    if findNewline == -1:
+                        findNewline = len(body)
                     # We don't wanna glob the newline here.
                     cache += body[i:findNewline]
                     i = findNewline
@@ -176,6 +180,9 @@ class Post():
                     # So here's what we'll do:
                     # We'll get the line
                     newlineTarget = body.find('\n', i)
+                    if newlineTarget == -1:
+                        newlineTarget = len(body) - 1
+                
                     line = body[i:newlineTarget + 1]
                     # We set this to 0 either way, because we do have some type of open.
                     openSize = 0
@@ -216,6 +223,8 @@ class Post():
                 modBod += char
             elif state == STATE_IN_SPACE_BLOCK:
                 findNewline = body.find('\n', i)
+                if findNewline == -1:
+                    findNewline = len(body) - 1
                 line = body[i:findNewline + 1]
 
                 if re.search(f"^{determineSpaces(levelMultiplier)}.*$", line):

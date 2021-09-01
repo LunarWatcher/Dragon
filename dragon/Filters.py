@@ -191,7 +191,7 @@ def newTo(post: Post):
     (post.body, count) = re.subn(
         r"(?i)(P.?S.?|also|btw|^)"
         + r"[ ,]*(I.{,3}|a)m.{,15}?"
-        + r"(brand|very|pretty|completely)? *new *(?:with|on|to|for|in)[^\n,.!?]{,30}((and) *,?|[.!?,]+)?",
+        + r"(brand|very|pretty|completely)? *new *(?:with|on|to|for|in)[^\n,.!?]{,30}(so.*?)((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE
@@ -268,7 +268,7 @@ def fixPunctuationSpacing(post: Post):
     # Introducing spacing after punctuation causes problems with unformatted file names.
     # Pre
     (post.body, count) = re.subn(
-        r"(?<!^ *)[ ]+?([,?!:)]+|[.]+(?!\S))",
+        r"(?<!^ *|\|)[ ]+?([,?!:)]+|[.]+(?!\S))",
         r"\1",
         post.body,
         flags = re.MULTILINE

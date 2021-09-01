@@ -5,7 +5,7 @@ inSentenceStrict = r"[^\n,.!?]"
 punctuation = r"[.!,?]"
 # }}}
 # Thanks {{{
-thanksPreFragment = rf"(?i)(^ *|{punctuation} *|- *) *"
+thanksPreFragment = rf"(?i)(?<=^ *|{punctuation} *|- *) *"
 thanksPostFragment = (
     r"( *?(you *|for *|and *)*"
     + r"( *(a lot|many|"
@@ -20,9 +20,10 @@ thanksPostFragment = (
     + r") *)+)?"
     + r",?[^\n.!?:,]*"
     + rf"{punctuation}*"
-    + r" *([:;]-?\))?\)*" # Trailing smileys
+    + r"( *([:;]-?\))?\))*" # Trailing smileys
     + r"(\n+(?! *__dragon).{,30}$)?"
 )
+
 # }}}
 # }}}
 # Note that these edits are body-only.
