@@ -8,6 +8,8 @@
 
 ## Changed
 * The placeholder system is now a regex/state machine hybrid, using a state machine for code blocks. May be expanded in the future, though that's probably gonna be when I'm not tired of state machines
+* Tweak thanks filter to avoid unnecessary space and punctuation globbing
+* Various regex changes
 
 
 # v0.3.0
