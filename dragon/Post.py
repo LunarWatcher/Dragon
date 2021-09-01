@@ -134,12 +134,6 @@ class Post():
             return PLACEHOLDER_INLINE_CODE.format(id)
         # Tabs are converted to spaces anyway, and this makes processing substantially easier.
         body = body.replace("\t", "    ");
-        # Links are insanely simple. We can regex these.
-        body = re.sub(r"^ *(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+",
-                onLink, body, flags = re.MULTILINE)
-        body = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
-                onLink, body, flags = re.MULTILINE)
-        body = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+//.*\n*)+", onLink, body, flags = re.MULTILINE)
         # And let's tank these too
         body = re.sub(r"<!-- begin snippet: .* -->\n(?:^.*$\n)*?<!-- end snippet -->",
                       onSnippet, body, flags = re.MULTILINE)
@@ -193,7 +187,7 @@ class Post():
                     # We then match this to regex
                     # Note that we've eliminated spaces by now.
                     if re.search("^[`~]+[^`~]*$", line):
-                        i = newlineTarget + 1
+                        i = newlineTarget
                         # We have a fence, or a "fence" - i.e. invalid single-quote
                         state = STATE_IN_FENCE
 
@@ -204,10 +198,9 @@ class Post():
                         # This may result in false positives for two-line blocks wrt. the code expansion filter.
                         modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
                     else:
-                        state = STATE_INLINE_CODE
-                        # We don't need to do anything else. We leave processing to the appropriate
-                        # state to avoid repetition.
-                    continue
+                        # We'll leave inline code processing to regex for the time being
+                        state = STATE_IN_LINE
+                        continue
 
                 else:
                     modBod += body[i]
@@ -267,30 +260,33 @@ class Post():
 
                 i = findNewline + 1
                 continue
-            elif state == STATE_INLINE_CODE:
-                modBod += body[i]
-                i += 1
-                continue
-                # This is really fucking easy.
-                # We already have the count, so:
-                newIdx = body.find('`' * openSize, i + openSize)
-                #                                           vvv avoid matching the open as the close
-                fragment = body[i:newIdx]
-                state = STATE_IN_LINE
-                # Seems about right
-                i = newIdx + openSize + 1
-                openSize = -1
+
 
             i += 1
+        if cache != "":
+            if state == STATE_IN_FENCE or state == STATE_IN_SPACE_BLOCK:
+                self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache)
+            else:
+                raise RuntimeError("unpack received \n---\n" + cache + "\n---\nfor unexpected state " + str(state))
+
+
+
 
         # Then we can do other code at the end. Brilliant!
         modBod = re.sub("(`{1,3})(?!__dragon)((?:[^`](?!\n\n))+?)(`{1,3})", onInline, modBod, flags = re.MULTILINE)
+        # Links are insanely simple. We can regex these.
+        modBod = re.sub(r"^ *(?: *(?:\[.*?\]): \w*:+\/\/.*\n*)+",
+                onLink, modBod, flags = re.MULTILINE)
+        modBod = re.sub(r"(?i)!?\[[^\]\n]+\](?:\([^\)\n]+\)|\[[^\]\n]+\])(?:\](?:\([^\)\n]+\)|\[[^\]\n]+\]))?|(?:/\w+/|.:\\|\w*://|\.+/[./\w\d]+|(?:\w+\.\w+){2,})[./\w\d:/?#\[\]@!$&'()*+,;=\-~%]*",
+                onLink, modBod, flags = re.MULTILINE)
+        modBod = re.sub(r"(?:^ *(?:[\r\n]|\r\n))?(?:  (?:\[\d\]): \w*:+//.*\n*)+", onLink, modBod, flags = re.MULTILINE)
 
         return modBod
 
-    def unpackBody(self):
+    def unpackBody(self, count = 0):
         if self.unpacked:
             return
+        deeper = False
         # Iterate the placeholder type and the blocks replaced
         for placeholderKey, blocks in self.placeholders.items():
             # Then iterate for each substitution
@@ -301,6 +297,12 @@ class Post():
                 # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
                     # repl += "\n"
                 self.body = self.body.replace(placeholderKey.format(i), repl)
+                if "__dragon" in repl:
+                    deeper = True
+        #             vvvvvvvvv avoid StackOverflowException
+        if deeper and count < 3:
+            self.unpackBody(count + 1)
+            return
 
         # Prevent several unpacks.
         # Purely used because we also unpack before we publish, which we do because we want to make sure

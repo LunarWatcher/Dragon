@@ -102,6 +102,21 @@ __dragonURL0Placeholder434957__""", post.body)
         post.unpackBody()
         self.assertEqual(mPost, post.body)
 
+    def testStartBlock(self):
+        mPost = """    this is a block
+    Though it shouldn't trick the code
+Then we have some text
+```
+and fuck it, a trailing code block
+"""
+        post = Post(mockAnswer(mPost))
+        self.assertEqual(
+            """__dragonCodeBlock0Placeholder434957__
+Then we have some text
+__dragonCodeBlock1Placeholder434957__""", post.body)
+
+        post.unpackBody()
+        self.assertEqual(post.body, mPost)
 
 if __name__ == "__main__":
     unittest.main()
