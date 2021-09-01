@@ -5,7 +5,7 @@ import regex as re
 import random
 import os
 
-from . import Utils
+import Utils
 
 randomNameCoefficient = str(random.randint(-1e6, 1e6))
 
@@ -132,8 +132,10 @@ class Post():
             self.placeholders[PLACEHOLDER_INLINE_CODE].append(pat.group(0))
             id = len(self.placeholders[PLACEHOLDER_INLINE_CODE]) - 1
             return PLACEHOLDER_INLINE_CODE.format(id)
-        # Tabs are converted to spaces anyway, and this makes processing substantially easier.
-        body = body.replace("\t", "    ");
+        def determineSpaces(levels):
+            #                         vvv tabs are why we can't have nice things. Fuck you, tabs
+            return "(?: {" + str(4 * levels) + "}|\t+)"
+
         # And let's tank these too
         body = re.sub(r"<!-- begin snippet: .* -->\n(?:^.*$\n)*?<!-- end snippet -->",
                       onSnippet, body, flags = re.MULTILINE)
@@ -216,7 +218,7 @@ class Post():
                 findNewline = body.find('\n', i)
                 line = body[i:findNewline + 1]
 
-                if re.search("^ {" + str(4 * levelMultiplier) + "}.*$", line):
+                if re.search(f"^{determineSpaces(levelMultiplier)}.*$", line):
                     if line == "\n":
                         raise RuntimeError("HOW?!")
                     i = findNewline + 1
@@ -230,7 +232,7 @@ class Post():
                         while off < len(body) and body[off] == "\n":
                             intrm += "\n"
                             off += 1
-                        if re.search("^ {" + str(4 * levelMultiplier) + "}.*$", body[off:body.find('\n', off) + 1]):
+                        if re.search(f"^{determineSpaces(levelMultiplier)}.*$", body[off:body.find('\n', off) + 1]):
                             i = off
                             cache += intrm
                             continue

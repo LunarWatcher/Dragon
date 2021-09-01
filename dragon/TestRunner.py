@@ -4,9 +4,8 @@ import random
 # Manipulate the seed for random consistency
 random.seed(69)
 
-import dragon.Post
-
-from dragon.Post import Post
+import Post
+from Post import Post
 
 
 def mockAnswer(bodyMarkdown):

@@ -1,7 +1,14 @@
-# [Version TBA]
+# v0.4.0
 
+## Fixed
 * Prevent deletion of placeholders by thanks (primarily a problem with links)
+
+## Added
 * Further expansion of `Dictionary.py`
+
+## Changed
+* The placeholder system is now a regex/state machine hybrid, using a state machine for code blocks. May be expanded in the future, though that's probably gonna be when I'm not tired of state machines
+
 
 # v0.3.0
 
