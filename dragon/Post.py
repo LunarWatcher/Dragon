@@ -252,8 +252,10 @@ class Post():
                 cache += line
                 if re.match('^ *[`~]{' + str(openSize) + '}$', line):
                     state = STATE_NEWLINE
-                    modBod += "\n"
-                    self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache[:-1])
+                    if cache.endswith("\n"):
+                        modBod += "\n"
+                        cache = cache[:-1]
+                    self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache)
 
                     cache = ""
                     openSize = -1
