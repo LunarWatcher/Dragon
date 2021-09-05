@@ -81,7 +81,7 @@ def eraseSalutations(post: Post):
             + r"good\s*(morning|day|afternoon|evening|weekend|night)(?: *to( *(?:all|everyone|you|guys|experts) *)+)?|"
             # This one needs to be hardened, because everyone does have good use cases elsewhere
             # We want to detect "Everyone!" as a standalone word. Otherwise, we glob it into other regexes
-            + r"(^|(?<=[.!?] +))everyone[.!?]|"
+            + r"(^.{0,6}|(?<=[.!?] +))every *one(?:[.!?]|(?= *I'm)|$)|"
             + r"(?i)(?:^|[.:!?]) *(?:is|have|has)(?: +(?:you|any *(?:one|body)|guy'?s?|) *)+.{,50}problem"
                 + "( with.{,20}?)([.?,!]+|$)|"
             + r"(\b| )[:;]-?[D()8d]+(\b|$| )|" # Emojis
@@ -291,7 +291,7 @@ def legalNames(post: Post):
         # of operations. I consider that a win
         names = {
             # websites
-            "Stack Overflow": r"\bstack[\s-]*overflow\b(?!com)",
+            "Stack Overflow": r"\bstack[ -]*over *flow\b(?!com)",
             "GitHub": r"\bgit[\s-]*hub\b(?!com)",
             # Generic trademarks
             "React Native": r"\breact[\s-]native\b",
@@ -302,8 +302,9 @@ def legalNames(post: Post):
             # We're not matching java script because it could be a writer with poor technical understanding
             # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
             # but we don't have enough context to make an informed decision.
-            "JavaScript": r"\b(?<!\.|-+)(js|javascript)\b",
+            "JavaScript": r"\b(?<!\.|-+|application/)(js|javascript)\b",
             ".NET": r"\b.net\b",
+            "Java": r"(?<=^| )java\b"
         }
 
         for repl, regex in names.items():

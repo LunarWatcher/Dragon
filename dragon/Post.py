@@ -265,7 +265,8 @@ class Post():
                     findNewline = len(body)
                 line = body[i:findNewline + 1]
                 cache += line
-                if re.match('^ *[`~]{' + str(openSize) + '}$', line):
+                #                                         v apparently, three open four close is valid?
+                if re.match('^ *[`~]{' + str(openSize) + ',}$', line):
                     state = STATE_NEWLINE
                     if cache.endswith("\n"):
                         modBod += "\n"
