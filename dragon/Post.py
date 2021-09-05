@@ -4,6 +4,7 @@ from colorama import Fore, Back
 import regex as re
 import random
 import os
+import PostFilters as PF
 
 import Utils
 
@@ -52,6 +53,7 @@ class Post():
         self.postType = "answer_count" in apiResponse
         self.postID = apiResponse["question_id" if self.postType else "answer_id"]
 
+        self.htmlResponse = apiResponse["body_markdown"]
         self.rawOldBody = Utils.cleanHTMLEntities(apiResponse["body_markdown"])
         self.oldBody = self.stripBody(self.rawOldBody)
         self.body = self.oldBody
@@ -86,7 +88,9 @@ class Post():
         if "items" not in checkPost:
             print("API failed to return the post.")
             return 0
-        if checkPost["items"][0]["last_activity_date"] > self.lastUpdate:
+        if (checkPost["items"][0]["last_activity_date"] > self.lastUpdate
+            # We need to verify the contents of the post as well, because grace period edits
+            or checkPost["items"][0]["body_markdown"] != self.htmlResponse):
             print("Edit conflict. Retrying question")
             #                                             vvv Avoid StackOverflowException. The count is checked elsewhere.
             return Post(checkPost["items"][0], self.count + 1)
@@ -282,9 +286,6 @@ class Post():
             else:
                 raise RuntimeError("unpack received \n---\n" + cache + "\n---\nfor unexpected state " + str(state))
 
-
-
-
         # Then we can do other code at the end. Brilliant!
         modBod = re.sub("(`{1,3})(?!__dragon)((?:[^`](?!\n\n))+?)(`{1,3})", onInline, modBod, flags = re.MULTILINE)
         # Links are insanely simple. We can regex these.
@@ -321,6 +322,7 @@ class Post():
         # Purely used because we also unpack before we publish, which we do because we want to make sure
         # automatic edits are allowed to pass through without needing interference.
         self.unpacked = True
+        self.body = PF.filterUnpacked(self.body)
 
     # Browser access {{{
     def open(self):

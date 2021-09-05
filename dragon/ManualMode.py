@@ -51,17 +51,16 @@ def countChanges(post: Post):
     if post.isQuestion() and post.tags != post.oldTags:
         # Tags are generally always fine.
         return 600
-    # Note: we CANNOT unpack the post yet, because it'll diff the packed oldPost, which we
-    # don't unpack. But that's fine, the changes potentially introduced from format unpacking
-    # should be non-existent.
+    post.unpackBody()
     count = 0
     if post.isQuestion():
         for pos, string in enumerate(DiffEngine(post.oldTitle, post.title)):
             if string.startswith("-") or string.startswith("+"):
                 count += 1
-    for pos, string in enumerate(DiffEngine(post.oldBody, post.body)):
+    for pos, string in enumerate(DiffEngine(post.rawOldBody, post.body)):
         if string.startswith("-") or string.startswith("+"):
             count += 1
+
     return count
 
 def checkPost(post: Post):
@@ -89,7 +88,6 @@ def checkAnswer(post: Post):
     global count
     count = -2
 
-    post.unpackBody()
     for line in colorDiff(DiffEngine(post.rawOldBody.split("\n"), post.body.split("\n"))):
         if line == "__DRAGON_IGN__":
             continue

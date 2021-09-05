@@ -102,20 +102,17 @@ def processPost(post: Post):
         # So to avoid unnecessary work, we don't process posts we know haven't changed.
         # Might be a good idea to make the update list persistent.
         return
-    # Cache varaible to detect changes
-    hasAltered: bool = False
     for filter in Filters.filters:
         result = filter(post)
-        if result != 0:
-            hasAltered = True
-            if DRAGON_DEBUG:
-                print("Filter matched:", filter)
+        if result != 0 and DRAGON_DEBUG:
+            # We only use the count for checking if the filter matches for the time being.
+            print("Filter matched:", filter)
 
     #                 vvv ....            vvv makes sure the edit is semi-substantial.
     #                                         substantial being "meets the minimum requirement for suggested editors"
     #                                         though I think titles are exempt from that, but we'll require both to
     #                                         add up to over 6 changes. The diff engine should be able to detect this
-    if hasAltered and countChanges(post) >= 6 and checkPost(post):
+    if countChanges(post) >= 6 and checkPost(post):
         response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if type(response) is Post:
@@ -129,7 +126,7 @@ def processPost(post: Post):
             idUpdateMap[post.postID] = response
         else:
             print("Failed to update")
-    elif hasAltered and DRAGON_DEBUG:
+    elif DRAGON_DEBUG:
         print("Post https://stackoverflow.com/q/{} not approved, or not enough changes.".format(post.postID))
         print()
 

@@ -386,15 +386,6 @@ def capitalizeSentences(post: Post):
     return post.body != oldBody
 # }}}
 # Style edits{{{
-def expandCode(post: Post):
-    # Bad: https://stackoverflow.com/posts/68446681/revisions @ rev2
-    (post.body, count) = re.subn(
-        "^`([^`]+)`$",
-        "```\n\\1\n```",
-        post.body,
-        flags = re.MULTILINE
-    )
-    return count
 # }}}
 
 filters = [
@@ -427,8 +418,6 @@ filters = [
     # }}}
     legalNames, # Needs to be after capitalizeSentences, to make sure trademarks aren't incorrectly capitalized due to their sentence position
 
-    # And this doesn't give two shits about capitalization, so might as well do it here
-    expandCode,
 
     # Tags, woo!
     addTags,

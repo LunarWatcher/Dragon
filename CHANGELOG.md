@@ -1,3 +1,15 @@
+# v0.5.0
+
+## Added
+* Post-unpack filters
+
+## Fixed
+* Grace period edits causing accidental removal. Mitigated with a post body check in addition to the date check, because grace period edits don't cause a bump in the `last_activity_date`
+* The code expansion filter now works again.
+
+## Changed
+* The runner checks for changes to the markdown body, instead of changes to the packed body. This is necessary to make post-unpack filters possible, because they're handled separately.
+
 # v0.4.0
 
 ## Fixed
