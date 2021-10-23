@@ -10,6 +10,7 @@
 
 ## Changed
 * The runner checks for changes to the markdown body, instead of changes to the packed body. This is necessary to make post-unpack filters possible, because they're handled separately.
+* `ye` now has a slight delay before opening the post in the browser, to make sure Dragon finishes up editing before opening the browser to let the user manually edit.
 
 # v0.4.0
 

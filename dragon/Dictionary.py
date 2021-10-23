@@ -41,6 +41,7 @@ filterDict = {
     # Spelling/grammar {{{
     r"(?i)(u)dpate": r"\1pdate", # 2k+ results
     r"(?i)\b(i)ts +(?=an?)": r"\1t's ", # Its a(b) => It's a(n)
+    r"(?i)\b(d)(?:eb+uger|eb{2,}ug{2,}er)\b": r"\1ebugger", # ~1500 results between debuger and debbuger, along with another 76 for debbugger
     # }}}
     # Punctuation {{{
     r"([^.]|^)\.{2}(?!\.)": r"\1.", # Double periods
@@ -60,7 +61,10 @@ filterDict = {
     r"(?i)Any help for.{,40}appre[^\s]* *(" + punctuation + "|$)": "",
     # }}}
     # Pointing out being new {{{
-    r"(?i)I'? *a?m *a *(noob|beginner|new) *(to|in) .{,30}" + punctuation: "",
+    r"(?i)I'? *a?m *a? *(noob|beginner|new) *(to|in) .{,30}" + punctuation: "",
+    # }}}
+    # Formatting {{{
+    r"(?i)(^ *\d+[.)])([^ ]+.*$)": r"\1 \2",
     # }}}
     # No category (should not be used - make new categories where possible) {{{
     # }}}

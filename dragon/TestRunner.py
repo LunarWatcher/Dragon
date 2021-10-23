@@ -117,5 +117,32 @@ __dragonCodeBlock1Placeholder434957__""", post.body)
         post.unpackBody()
         self.assertEqual(post.body, mPost)
 
+    def testShittyLists(self):
+        mPost = """Oh no.
+
+We have a list:
+1. This is a list
+
+    2. This is a list as well
+
+    3. So is this
+        1. This is a nested list
+
+                While _this_ is code
+"""
+        post = Post(mockAnswer(mPost))
+        self.assertEqual("""Oh no.
+
+We have a list:
+1. This is a list
+
+    2. This is a list as well
+
+    3. So is this
+        1. This is a nested list
+
+__dragonCodeBlock0Placeholder434957__
+""", post.body)
+
 if __name__ == "__main__":
     unittest.main()

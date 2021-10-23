@@ -3,6 +3,8 @@ import sys
 import os
 from colorama import Fore, Back, init
 
+from threading import Timer
+
 from Post import *
 init()
 
@@ -101,7 +103,7 @@ def checkAnswer(post: Post):
     if response in ["yes", "y", "1", "true"]:
         return True
     elif response == "ye":
-        post.edit()
+        Timer(1.0, post.edit).start()
         return True
     elif response == "ne":
         post.edit()

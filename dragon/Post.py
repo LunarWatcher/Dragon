@@ -138,7 +138,7 @@ class Post():
             return PLACEHOLDER_INLINE_CODE.format(id)
         def determineSpaces(levels):
             #                         vvv tabs are why we can't have nice things. Fuck you, tabs
-            return "(?: {" + str(4 * levels) + "}|\t+)"
+            return "(?: {" + str(4 * (1 + levels)) + "}|\t+)"
 
         # And let's tank these too
         body = re.sub(r"<!-- begin snippet: .* -->\n(?:^.*$\n)*?<!-- end snippet -->",
@@ -149,7 +149,7 @@ class Post():
         cache = ""
 
         state = STATE_NEWLINE
-        levelMultiplier = 1
+        levelMultiplier = 0
 
         openSize = -1
 
@@ -165,7 +165,7 @@ class Post():
                     i += 1
                     continue
 
-                if ((i == 0 or state == STATE_BLANK_LINE) and body[i:i + 4 * levelMultiplier] == " " * 4 * levelMultiplier):
+                if ((i == 0 or state == STATE_BLANK_LINE) and body[i:i + 4 * (levelMultiplier + 1)] == " " * (4 * (levelMultiplier + 1))):
                     state = STATE_IN_SPACE_BLOCK
 
                     modBod += PLACEHOLDER_CODE_BLOCK.format(len(self.placeholders[PLACEHOLDER_CODE_BLOCK]))
@@ -186,7 +186,6 @@ class Post():
                     newlineTarget = body.find('\n', i)
                     if newlineTarget == -1:
                         newlineTarget = len(body) - 1
-                
                     line = body[i:newlineTarget + 1]
                     # We set this to 0 either way, because we do have some type of open.
                     openSize = 0
@@ -216,6 +215,24 @@ class Post():
                         continue
 
                 else:
+                    eol = body.find("\n", i + 1)
+
+                    if eol != -1 and re.search("^ {" + str(4 * levelMultiplier) + "}[0-9]+[.)]", body[i:eol]):
+                        levelMultiplier += 1
+                        modBod += body[i:eol]
+                        i = eol
+                        continue
+                    elif eol != -1 and levelMultiplier > 0 and re.search("^ {" + str(4 * (levelMultiplier - 1))+ "}[0-9]+[.)]", body[i:eol]):
+                        modBod += body[i:eol]
+                        i = eol
+                        continue
+                    elif eol != -1:
+                        # Multiple levels can disappear at once
+                        while (levelMultiplier > 0 and not re.search("^( {" + str(levelMultiplier * 4) + "}.*$| *$)", body[i:eol])):
+                            # I fucking hate markdown some times
+                            # Fun fact, you can use a mix of 3 and 4 levels. Code blocks unfortunately work the same way
+                            # That said, we only look for four multipliers, because god fucking damn it's annoying to deal with varying levels
+                            levelMultiplier -= 1
                     modBod += body[i]
                     #                                                       vvv we preserve the newline state if we only get spaces
                     # There's not gonna be a code block at this point anyway, thanks to our previous conversion of tabs to spaces.

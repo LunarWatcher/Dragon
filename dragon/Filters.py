@@ -75,7 +75,7 @@ def eraseSalutations(post: Post):
     (post.body, count) = re.subn(
         "(?i)(?:(?:"
             + r"happy coding\W*(?:guy'?s)?|"
-            + r"(^((kind(?:est)|best)?\s*regards|cheers|thanks? *(?:you *)?(?: *in advance *)?).?(\n+[0-9a-z.\-,! /]{,40}\Z)?)|" # TODO: harden
+            + r"(^((kind(?:est)|best)?\s*regards|cheers|thanks? *(?:you *)?(?: *in advance *)?).?(\n+[0-9a-z.\-,! /]{,40}(?=\n*\Z))?)|" # TODO: harden
             + r"((can (?:any|some)\s*one|I need|please) +)+(help|hello)(?! +to) *(?:\s*me\s*|\s*please\s*|\s*out\s*|\s*here\s*|"
             + r"\s*with[^.!?]{,40}\s*)*[.?!]|" # TODO: harden fragment
             + r"good\s*(morning|day|afternoon|evening|weekend|night)(?: *to( *(?:all|everyone|you|guys|experts) *)+)?|"
@@ -303,7 +303,7 @@ def legalNames(post: Post):
             # Who doesn't know that Java doesn't have scripts. This does mean we miss the typo of JavaScript,
             # but we don't have enough context to make an informed decision.
             "JavaScript": r"\b(?<!\.|-+|application/)(js|javascript)\b",
-            ".NET": r"\b.net\b",
+            ".NET": r"\b\.net\b",
             "Java": r"(?<=^| )java\b"
         }
 
