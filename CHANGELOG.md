@@ -6,7 +6,7 @@
 ## Fixed
 * Grace period edits causing accidental removal. Mitigated with a post body check in addition to the date check, because grace period edits don't cause a bump in the `last_activity_date`
 * The code expansion filter now works again.
-* Patch code block parsing to handle how uneven code blocks are valid markdown as long as close >= open
+* Parse lists properly (note: currently disregards how 3-indent is valid for list continuation, because I cannot be arsed to deal with that garbage).
 
 ## Changed
 * The runner checks for changes to the markdown body, instead of changes to the packed body. This is necessary to make post-unpack filters possible, because they're handled separately.

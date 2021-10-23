@@ -164,7 +164,6 @@ class Post():
                     state = STATE_BLANK_LINE
                     i += 1
                     continue
-
                 if ((i == 0 or state == STATE_BLANK_LINE) and body[i:i + 4 * (levelMultiplier + 1)] == " " * (4 * (levelMultiplier + 1))):
                     state = STATE_IN_SPACE_BLOCK
 
@@ -217,22 +216,30 @@ class Post():
                 else:
                     eol = body.find("\n", i + 1)
 
-                    if eol != -1 and re.search("^ {" + str(4 * levelMultiplier) + "}[0-9]+[.)]", body[i:eol]):
+                    # print(levelMultiplier, body[i:eol])
+                    if eol != -1 and re.search("^ {" + str(4 * levelMultiplier) + "," + str(4 * (levelMultiplier + 1) - 1) + "}[0-9]+[.)]", body[i:eol]):
+                        # print(levelMultiplier, body[i:eol])
                         levelMultiplier += 1
                         modBod += body[i:eol]
                         i = eol
                         continue
-                    elif eol != -1 and levelMultiplier > 0 and re.search("^ {" + str(4 * (levelMultiplier - 1))+ "}[0-9]+[.)]", body[i:eol]):
+                    elif eol != -1 and levelMultiplier > 0 and re.search("^ {" + str(4 * (levelMultiplier - 1)) + "," + str(4 * levelMultiplier - 1) + "}[0-9]+[.)]", body[i:eol]):
+                        # print(levelMultiplier, body[i:eol])
                         modBod += body[i:eol]
                         i = eol
                         continue
-                    elif eol != -1:
-                        # Multiple levels can disappear at once
+                    elif eol != -1 and levelMultiplier > 0:
+                        # This is to avoid accidental space globbing
+                        dirty = False
+                        # We need to make sure we account for several levels disappearing at once
                         while (levelMultiplier > 0 and not re.search("^( {" + str(levelMultiplier * 4) + "}.*$| *$)", body[i:eol])):
                             # I fucking hate markdown some times
                             # Fun fact, you can use a mix of 3 and 4 levels. Code blocks unfortunately work the same way
                             # That said, we only look for four multipliers, because god fucking damn it's annoying to deal with varying levels
                             levelMultiplier -= 1
+                            dirty = True
+                        if dirty:
+                            continue
                     modBod += body[i]
                     #                                                       vvv we preserve the newline state if we only get spaces
                     # There's not gonna be a code block at this point anyway, thanks to our previous conversion of tabs to spaces.

@@ -129,6 +129,7 @@ We have a list:
         1. This is a nested list
 
                 While _this_ is code
+    2. but we also wanna make sure that dropdown works fine
 """
         post = Post(mockAnswer(mPost))
         self.assertEqual("""Oh no.
@@ -142,6 +143,7 @@ We have a list:
         1. This is a nested list
 
 __dragonCodeBlock0Placeholder434957__
+    2. but we also wanna make sure that dropdown works fine
 """, post.body)
 
 if __name__ == "__main__":
