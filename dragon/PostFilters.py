@@ -5,7 +5,7 @@ import regex as re
 def filterUnpacked(body):
     # Bad: https://stackoverflow.com/posts/68446681/revisions @ rev2
     body = re.sub(
-        r"^(`{1,3})([^`]+)\1$",
+        r"^(`{1,3})([^`\n]+)\1$",
         r"```\n\2\n```",
         body,
         flags = re.MULTILINE

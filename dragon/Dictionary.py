@@ -58,7 +58,7 @@ filterDict = {
     # }}}
     # Soliciting replies {{{
     r"(?i)I(?:'d) *appreciated?(?: *(?:any|it|if|you|could|body|one) *)* *(answers?|repl[yies]+)" + punctuation: "",
-    r"(?i)Any help for.{,40}appre[^\s]* *(" + punctuation + "|$)": "",
+    r"(?i)Any help (for|is).{,40}appre[^\s]* *(" + punctuation + "|$)": "",
     # }}}
     # Pointing out being new {{{
     r"(?i)I'? *a?m *a? *(noob|beginner|new) *(to|in) .{,30}" + punctuation: "",
