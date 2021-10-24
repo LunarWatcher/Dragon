@@ -20,6 +20,7 @@ PLACEHOLDER_CODE_BLOCK = "__dragonCodeBlock{{}}Placeholder{}__".format(randomNam
 PLACEHOLDER_LINK = "__dragonURL{{}}Placeholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_INLINE_CODE = "__dragonInlineCode{{}}Placeholder{}__".format(randomNameCoefficient)
 PLACEHOLDER_HTML_COMMENT = "___dragonHTMLComment{{}}Placeholder{}__".format(randomNameCoefficient)
+PLACEHOLDER_QUOTE = "__dragonQuote{{}}Placeholder{}__".format(randomNameCoefficient)
 
 STANDALONE_Q_FILTER = "!nKzQUR30W7"
 STANDALONE_A_FILTER = "!-)rKGgZWpB1r"
@@ -32,6 +33,7 @@ STATE_IN_FENCE       = 4
 STATE_IN_SPACE_BLOCK = 5
 STATE_HAS_BLANK      = 6
 STATE_INLINE_CODE    = 7
+STATE_IN_QUOTE       = 8
 
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
@@ -47,6 +49,7 @@ class Post():
             PLACEHOLDER_LINK: [],
             PLACEHOLDER_INLINE_CODE: [],
             PLACEHOLDER_HTML_COMMENT: [],
+            PLACEHOLDER_QUOTE: []
         }
 
         # TODO: parse out the user
@@ -215,20 +218,27 @@ class Post():
 
                 else:
                     eol = body.find("\n", i + 1)
-
-                    # print(levelMultiplier, body[i:eol])
-                    if eol != -1 and re.search("^ {" + str(4 * levelMultiplier) + "," + str(4 * (levelMultiplier + 1) - 1) + "}[0-9]+[.)]", body[i:eol]):
+                    if (eol == -1):
+                        eol = len(body)
+                    # Quotes
+                    if re.search("^ *>", body[i:eol]):
+                        # We could use a state here, but fuck that shit
+                        state = STATE_IN_QUOTE
+                        modBod += PLACEHOLDER_QUOTE.format(len(self.placeholders[PLACEHOLDER_QUOTE]))
+                        continue
+                    # Lists 
+                    if re.search("^ {" + str(4 * levelMultiplier) + "," + str(4 * (levelMultiplier + 1) - 1) + "}[0-9*\-]+[.)]", body[i:eol]):
                         # print(levelMultiplier, body[i:eol])
                         levelMultiplier += 1
                         modBod += body[i:eol]
                         i = eol
                         continue
-                    elif eol != -1 and levelMultiplier > 0 and re.search("^ {" + str(4 * (levelMultiplier - 1)) + "," + str(4 * levelMultiplier - 1) + "}[0-9]+[.)]", body[i:eol]):
+                    elif levelMultiplier > 0 and re.search("^ {" + str(4 * (levelMultiplier - 1)) + "," + str(4 * levelMultiplier - 1) + "}[0-9*\-]+[.)]", body[i:eol]):
                         # print(levelMultiplier, body[i:eol])
                         modBod += body[i:eol]
                         i = eol
                         continue
-                    elif eol != -1 and levelMultiplier > 0:
+                    elif levelMultiplier > 0:
                         # This is to avoid accidental space globbing
                         dirty = False
                         # We need to make sure we account for several levels disappearing at once
@@ -302,12 +312,32 @@ class Post():
 
                 i = findNewline + 1
                 continue
+            elif state == STATE_IN_QUOTE:
+                eol = body.find('\n', i + 1)
+                if (eol == -1):
+                    eol = len(body)
 
+                # Code has been eliminated at this point, so we're good to glob up all spaces
+                # If code suddenly starts, it has to be fully covered in > to be valid, 
+                # or has to have a preceeding newline.
+                #
+                # Largely just means less list fuckery for us 
+                if (re.search("^ *>.*$", body[i:eol])):
+                    cache += body[i:eol + 1]
+                    i = eol + 1
+                    continue
+                else:
+                    self.placeholders[PLACEHOLDER_QUOTE].append(cache)
+                    cache = ""
+                    state = STATE_NEWLINE
+                    continue
 
             i += 1
         if cache != "":
             if state == STATE_IN_FENCE or state == STATE_IN_SPACE_BLOCK:
                 self.placeholders[PLACEHOLDER_CODE_BLOCK].append(cache)
+            elif state == STATE_IN_QUOTE:
+                self.placeholders[PLACEHOLDER_QUOTE].append(cache)
             else:
                 raise RuntimeError("unpack received \n---\n" + cache + "\n---\nfor unexpected state " + str(state))
 

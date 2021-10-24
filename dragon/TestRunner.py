@@ -6,6 +6,7 @@ random.seed(69)
 
 import Post
 from Post import Post
+import Filters
 
 
 def mockAnswer(bodyMarkdown):
@@ -145,6 +146,27 @@ We have a list:
 __dragonCodeBlock0Placeholder434957__
     2. but we also wanna make sure that dropdown works fine
 """, post.body)
+
+    def testQuotes(self):
+        mPost = """> Henlo
+> *quotes intensify*
+> thanks you
+
+The above shouldnt be touched.
+> We also need an ending quote"""
+        post = Post(mockAnswer(mPost))
+        self.assertEqual("""__dragonQuote0Placeholder434957__
+The above shouldnt be touched.
+__dragonQuote1Placeholder434957__""", post.body)
+        for filter in Filters.filters:
+            filter(post)
+        post.unpackBody()
+        self.assertEqual("""> Henlo
+> *quotes intensify*
+> thanks you
+
+The above shouldn't be touched.
+> We also need an ending quote""", post.body)
 
 if __name__ == "__main__":
     unittest.main()

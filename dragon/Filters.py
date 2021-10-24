@@ -206,7 +206,8 @@ def missingAbbrevQuote(post: Post):
             (r"(?i)\b(d)oesnt\b", r"\1oesn't"),
             (r"(?i)\b(c)ant\b", r"\1an't"),
             (r"(?i)\b(w|d)ont\b", r"\1on't"),
-            (r"(?i)\bi[\" ]?ve\b", r"I've")
+            (r"(?i)\bi[\" ]?ve\b", r"I've"),
+            (r"(?i)\b(s)houldnt", r"\1houldn't"),
     ]:
         (post.body, count) = re.subn(
             regex,
