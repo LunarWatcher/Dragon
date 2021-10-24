@@ -2,6 +2,8 @@
 
 ## Added
 * Post-unpack filters
+* Additional filters
+* Added placeholder for quotes (markdown: `>`) to avoid accidental noise removal from quotes (Example post ID: 69684049)
 
 ## Fixed
 * Grace period edits causing accidental removal. Mitigated with a post body check in addition to the date check, because grace period edits don't cause a bump in the `last_activity_date`
@@ -15,7 +17,7 @@
 # v0.4.0
 
 ## Fixed
-* Prevent deletion of placeholders by thanks (primarily a problem with links)
+* Prevent deletion of placeholders near thanks (primarily a problem with links)
 
 ## Added
 * Further expansion of `Dictionary.py`
