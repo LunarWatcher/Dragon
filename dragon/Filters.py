@@ -191,7 +191,7 @@ def newTo(post: Post):
     (post.body, count) = re.subn(
         r"(?i)(P.?S.?|also|btw|^)"
         + r"[ ,]*(I.{,3}|a)m.{,15}?"
-        + r"(brand|very|pretty|completely)? *new *(?:with|on|to|for|in)[^\n,.!?]{,30}(so.*?)((and) *,?|[.!?,]+)?",
+        + r"(brand|very|pretty|completely)? *new *(?:with|on|to|for|in)[^\n,.!?]{,30}(\bso\b.*?)((and) *,?|[.!?,]+)?",
         "",
         post.body,
         flags = re.MULTILINE

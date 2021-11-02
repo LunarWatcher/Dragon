@@ -1,3 +1,12 @@
+# v0.6.0
+
+## Added
+* Commands (to make searching possible)
+* Searching
+
+## Changed
+* Targeting posts now requires a command (`Runner.py target 42 621 69 420 ...`)
+
 # v0.5.0
 
 ## Added

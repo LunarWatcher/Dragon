@@ -57,6 +57,7 @@ if (oauthToken == ""):
 print("OAuth token loaded.")
 SO = StackAPI('stackoverflow', access_token=oauthToken, key=API_TOKEN, version="2.3")
 SO.page_size = 100
+SO.max_pages = 1
 
 # User validation {{{
 user = SO.fetch("me")["items"][0]
@@ -130,17 +131,7 @@ def processPost(post: Post):
         print("Post https://stackoverflow.com/q/{} not approved, or not enough changes.".format(post.postID))
         print()
 
-def mainLoop():
-    questions = []
-    if len(argv) > 1:
-        possible = argv[1:]
-
-        for q in possible:
-            try:
-                questions.append(str(int(q)))
-            except:
-                continue
-
+def processQuestions(questions):
     # Primary loop
     # len(argv) == 1 is always true if there's no arguments supplied,
     # and false otherwise.
@@ -154,6 +145,8 @@ def mainLoop():
         # Test IDs can be inserted by appending /id1,id2,id3,... to the path.
         # Using questions instead of answers minimizes work
         baseRequest = SO.fetch("questions" + (("/" + (";".join(questions))) if len(questions) > 0 else ""), page if alt else 1, filter = QUESTION_FILTER)
+        if alt:
+            page += 1
         alt = not alt
         questions = []
         recentQuestions = baseRequest["items"]
@@ -190,5 +183,45 @@ def mainLoop():
                 answerPost = Post(answer)
                 processPost(answerPost)
 
+def mainLoop():
+    questions = []
+    command = ""
+    if len(argv) > 1:
+        command = argv[1]
+        possible = argv[2:]
+
+        if command == "search":
+            print("Running search mode")
+        elif command == "target":
+            print("Running target mode")
+            for q in possible:
+                try:
+                    questions.append(str(int(q)))
+                except:
+                    continue
+        elif command == "help":
+            print("The valid commands are: search, target")
+            exit(0)
+        else:
+            print("No such command: {}".format(command))
+            exit(0)
+    if command == "":
+        processQuestions([])
+    elif command == "target":
+        processQuestions(questions)
+    elif command == "search":
+        args = {b[0]: b[1] for b in [ a.split("=") for a in argv[2:] ]}
+        while True:
+            questions.clear()
+            # Search loop
+            print(args)
+            posts = SO.fetch("search/excerpts", 1, **args)["items"]
+            print(len(posts))
+            questions = [str(a["question_id"]) for a in posts]
+            print("Search returned: {}".format(len(questions)))
+            if len(questions) == 0:
+                break
+
+            processQuestions(questions)
 
 mainLoop()

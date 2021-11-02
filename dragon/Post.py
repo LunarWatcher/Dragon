@@ -5,6 +5,7 @@ import regex as re
 import random
 import os
 import PostFilters as PF
+import Dictionary
 
 import Utils
 
@@ -60,6 +61,10 @@ class Post():
         self.rawOldBody = Utils.cleanHTMLEntities(apiResponse["body_markdown"])
         self.oldBody = self.stripBody(self.rawOldBody)
         self.body = self.oldBody
+
+        # Whether or not an edit is _so important_, that regardless of how many changes,
+        # it has to be allowed.
+        self.critical = False
 
         if self.postType:
             # Parse out titles and tags
@@ -361,8 +366,12 @@ class Post():
             # Then iterate for each substitution
             for i in range(0, len(blocks)):
                 repl = blocks[i]
+                if (placeholderKey.startswith("__dragonURL")):
+                    for regex, target in Dictionary.linkFilters.items():
+                        (repl, count) = re.subn(regex, target, repl)
+                        if (count != 0):
+                            self.critical = True
 
-                # TODO: hook up link filters here
                 # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
                     # repl += "\n"
                 self.body = self.body.replace(placeholderKey.format(i), repl)
@@ -378,6 +387,7 @@ class Post():
         # automatic edits are allowed to pass through without needing interference.
         self.unpacked = True
         self.body = PF.filterUnpacked(self.body)
+        print(self.critical)
 
     # Browser access {{{
     def open(self):

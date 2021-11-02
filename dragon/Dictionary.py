@@ -83,4 +83,5 @@ filterDict = {
 # but that's another can of worms.
 linkFilters = {
     "facebook\.github\.io/react-native/docs": "reactnative.dev/docs",
+    "https?://[^ ]*maven-repository\.com": "https://mvnrepository.com"
 }

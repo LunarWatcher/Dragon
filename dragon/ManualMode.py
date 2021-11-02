@@ -54,6 +54,9 @@ def countChanges(post: Post):
         # Tags are generally always fine.
         return 600
     post.unpackBody()
+    # Checking for critical edits has to be done after unpacking, to make sure post-unpack filters are included.
+    if (post.critical):
+        return 600
     count = 0
     if post.isQuestion():
         for pos, string in enumerate(DiffEngine(post.oldTitle, post.title)):
