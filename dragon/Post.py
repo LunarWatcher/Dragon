@@ -368,8 +368,8 @@ class Post():
                 repl = blocks[i]
                 if (placeholderKey.startswith("__dragonURL")):
                     for regex, target in Dictionary.linkFilters.items():
-                        (repl, count) = re.subn(regex, target, repl)
-                        if (count != 0):
+                        (repl, replCnt) = re.subn(regex, target, repl)
+                        if (replCnt != 0):
                             self.critical = True
 
                 # if placeholderKey == PLACEHOLDER_CODE_BLOCK and not re.search("\n *$"):
@@ -387,7 +387,6 @@ class Post():
         # automatic edits are allowed to pass through without needing interference.
         self.unpacked = True
         self.body = PF.filterUnpacked(self.body)
-        print(self.critical)
 
     # Browser access {{{
     def open(self):
