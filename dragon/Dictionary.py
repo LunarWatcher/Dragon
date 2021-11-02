@@ -56,12 +56,16 @@ filterDict = {
     # ? is even greedy by default.
     thanksPreFragment + r"(?i)thank *(?! *to *)" + thanksPostFragment: "",
     # }}}
+    # Help! {{{
+    r"(?i)(could (?:you|any *(?:one|body)) *)?ple[azes]+ *help *me(?:with this)? *": "",
+    r"(?i)any help (?:would be|is) (greatly)? *appreciated": "",
+    # }}}
     # Soliciting replies {{{
     r"(?i)I(?:'d) *appreciated?(?: *(?:any|it|if|you|could|body|one) *)* *(answers?|repl[yies]+)" + punctuation: "",
     r"(?i)Any help (for|is).{,40}appre[^\s]* *(" + punctuation + "|$)": "",
     # }}}
     # Pointing out being new {{{
-    r"(?i)I'? *a?m *a? *(noob|beginner|new) *(to|in) .{,30}" + punctuation: "",
+    r"(?i)I'? *a?m *a? *(noob|beginner|new) *(to|in) [^\n.?!]{,30}" + punctuation: "",
     # }}}
     # Formatting {{{
     r"(?i)(^ *\d+[.)])([^ ]+.*$)": r"\1 \2",

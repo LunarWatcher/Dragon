@@ -17,7 +17,9 @@ def dictionaryAttack(post: Post):
     Might be worth migrating a lot of the basic functions to a function like this. /shrug
     """
     for regex, repl in filterDict.items():
-        post.body = re.sub(regex, repl, post.body, flags = re.MULTILINE)
+        (post.body, cnt) = re.subn(regex, repl, post.body, flags = re.MULTILINE)
+        if (cnt != 0):
+            print("Regex matched: {}".format(regex))
 
     return post.oldBody != post.body
 
@@ -129,6 +131,10 @@ def unnecessaryApologies(post: Post):
     return count
 
 def noHelp(post: Post):
+    # WARNING: this function is currently a noop while it's being moved to the dictionary.
+    # It's being cut off now due to an annoying false positive I can't get rid of
+    # without rewriting
+
     # We need to better determine what punctuation to remove, so we use a function.
     def replace(pat):
         # We have groups for the punctuation
@@ -165,7 +171,7 @@ def noHelp(post: Post):
         # Anyway, we'll let a different filter handle that clusterfuck :)
         + r"(?<!this *will *|did *n['o]*t)"
         + r"(?:\s*(?:help|assist|teach|(?:and|or)? *guidance)\b\s*)+\s*"
-        + r"(?:(?:[, ]*(?:me|fix|th?is|understand|urgently\s*|(?:will|would) (?:be|mean)|greatly|direly|appreciated|at all|please)[, ]*)+"
+        + r"(?: *and|(?:[, ]*(?:me|fix|th?is|understand|urgently\s*|(?:will|would) (?:be|mean)|greatly|direly|appreciated|at all|please)[, ]*)+"
             + r"[^!.?\n,]{,60} *|"
             + r"[^!.?\n,]{,15}|"
             + r"(?=.{,15} +thanks)" # This searches but doesn't match a trailing thanks. We wanna delete these fragments separately due to there being different checks.
@@ -205,7 +211,7 @@ def missingAbbrevQuote(post: Post):
             (r"(?i)\b(?:i\"m|i *m(?: am)?|i'am)\b", "I'm"),
             (r"(?i)\b(d)oesnt\b", r"\1oesn't"),
             (r"(?i)\b(c)ant\b", r"\1an't"),
-            (r"(?i)\b(w|d)ont\b", r"\1on't"),
+            (r"(?i)\b(w|d)on`?t\b", r"\1on't"),
             (r"(?i)\bi[\" ]?ve\b", r"I've"),
             (r"(?i)\b(s)houldnt", r"\1houldn't"),
     ]:
@@ -397,7 +403,6 @@ filters = [
     noSolutionMeta,
     problemSentences,
     firstQuestion,
-    noHelp,
     # This one needs priority over regular "thanks"
     # to properly erase "thanks,\n\nMyName"
     eraseSalutations,
