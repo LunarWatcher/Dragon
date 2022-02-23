@@ -7,6 +7,8 @@ import os
 import PostFilters as PF
 import Dictionary
 
+import Reasons
+
 import Utils
 
 randomNameCoefficient = str(random.randint(-1e6, 1e6))
@@ -36,12 +38,17 @@ STATE_HAS_BLANK      = 6
 STATE_INLINE_CODE    = 7
 STATE_IN_QUOTE       = 8
 
+# Edit summaries can be 300 characters. This leaves us with 50 characters for Dragon meta, as well as a solid margin
+MAX_REASON_LENGTH = 250
+
 # Contains various fields used to deal with weird API requirements,
 # as well as to provide diffs where needed.
 class Post():
 
     def __init__(self, apiResponse, count = 0):
         self.count = count
+        self.changes = set()
+
         self.placeholders = {
             # I fucking hate this.
             # C++ has spoiled me with lists that default-initialize themselves.
@@ -387,6 +394,61 @@ class Post():
         # automatic edits are allowed to pass through without needing interference.
         self.unpacked = True
         self.body = PF.filterUnpacked(self.body)
+
+    def convertToFile(self, useModified):
+        result = ""
+        if self.isQuestion():
+            sTags = "\n".join(self.tags)
+            result = f"Title:\n{self.title}\nTags:\n{sTags}\n\n"
+
+        result += "Body:\n" + (self.body if useModified else self.rawOldBody)
+        return result
+
+    def fromFile(self, content: list):
+        c = 0 if self.isQuestion() else 1
+        if not c:
+            self.tags = []
+        self.body = None
+
+        for i in range(0, len(content)):
+            if (i == 1 and c == 0):
+                self.title = content[i]
+            elif i > 2 and c == 0:
+                if content[i] == "":
+                    c += 1
+                else:
+                    self.tags.append(content[i])
+
+            elif content[i] == "Body:" and c == 1:
+                self.body = "\n".join(content[i + 1:])
+                break
+        if (self.body == None):
+            raise RuntimeError("Failed to set body")
+
+    def generateEditSummary(self):
+        def expand(base, reason):
+            fullReason = Reasons.reasons[reason] if reason in Reasons.reasons else reason
+            if (len(base) + 2 + len(fullReason) > MAX_REASON_LENGTH):
+                return base
+            return base + (", " if len(base) != 0 else "") + fullReason
+
+        def prioExpand(base, reasons, reason):
+            if reason in reasons:
+                reasons.remove(reason)
+                return expand(base, reason)
+            return base
+
+        reasons = self.changes
+
+        reasonString = ""
+
+        reasonString = prioExpand(reasonString, reasons, "supervised")
+        reasonString = prioExpand(reasonString, reasons, "auto")
+
+        for reason in reasons:
+            reasonString = expand(reasonString, reason)
+
+        return "Dragon::[" + reasonString + "]"
 
     # Browser access {{{
     def open(self):

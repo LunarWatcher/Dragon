@@ -114,7 +114,7 @@ def processPost(post: Post):
     #                                         though I think titles are exempt from that, but we'll require both to
     #                                         add up to over 6 changes. The diff engine should be able to detect this
     if countChanges(post) >= 6 and checkPost(post):
-        response = post.publishUpdates(SO, "Dragon::Supervised edit (descriptions not implemented)")
+        response = post.publishUpdates(SO, post.generateEditSummary())
         # If we get 0, there's no last activity field, meaning  there's probably an error
         if type(response) is Post:
             if response.count > 1:
