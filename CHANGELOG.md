@@ -3,9 +3,12 @@
 ## Added
 * Commands (to make searching possible)
 * Searching
+* Reasons are now minimally supported. They haven't been used much in the code at the time of writing, but the framework is there to support them.
+* Added support for local editing ([#7](https://github.com/LunarWatcher/Dragon/issues/7)) in two modes; with and without Dragon's suggestion
 
 ## Changed
 * Targeting posts now requires a command (`Runner.py target 42 621 69 420 ...`)
+* `ne` now opens a local editor instead of opening a page on Stack Overflow.
 
 # v0.5.0
 
