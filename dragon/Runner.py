@@ -23,7 +23,7 @@ CLIENT_ID = "20280"
 # This token isn't considered a secret by the API
 API_TOKEN = "qXwVVNIDCIX7LpUEoDHIpA(("
 
-OAUTH_VERIFICATION_URL = "https://lunarwatcher.github.io/Dragon/token_echo.html"
+OAUTH_VERIFICATION_URL = "https://stackoverflow.com"
 # Endpoint filters {{{
 # Filter for the /questions endpoint
 QUESTION_FILTER = "!3xr(P-20tB)GfFE5r"

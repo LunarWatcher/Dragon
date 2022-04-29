@@ -38,7 +38,7 @@ DRAGON_EDITOR = rawEditor if rawEditor not in editorCommandMap else editorComman
 
 count: int = -2
 
-def colorDiff(diff):
+def colorDiff(diff, expand = DRAGON_EXPAND):
     global count
     for line in diff:
         if count > 0:
@@ -55,7 +55,7 @@ def colorDiff(diff):
             count = -2
             yield frag + Fore.BLUE + line + Fore.RESET
         else:
-            if not DRAGON_EXPAND:
+            if not expand:
                 count += 1
                 if count >= 0:
                     yield "__DRAGON_IGN__"
@@ -100,7 +100,7 @@ def checkPost(post: Post):
                     continue
                 print(line)
             print("Tags:")
-            for line in colorDiff(DiffEngine(post.oldTags, post.tags)):
+            for line in colorDiff(DiffEngine(post.oldTags, post.tags), True):
                 print(line)
         print("Body:")
         for line in colorDiff(DiffEngine(post.rawOldBody.split("\n"), post.body.split("\n"))):
