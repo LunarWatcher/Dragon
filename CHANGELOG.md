@@ -1,3 +1,11 @@
+# v0.7.0
+
+## Changed
+* Changed to OAuth redirect URL to stackoverflow.com, instead of a hackish system on GitHub
+
+## Fixed
+* Prevent tags from auto-collapsing
+
 # v0.6.0
 
 ## Added
