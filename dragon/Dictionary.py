@@ -36,6 +36,7 @@ filterDict = {
     r"(?i)^ *hugs *$": "", # TODO: make more permissive
     # Problem complaining meta {{{
     rf"(?i)I have been (stuck|strug+ling) (with|on) this for{inSentence}{{,12}}([.?!]|$)": r"",
+    r"(?i)every (hint|tip) is appreciated?": "",
     # }}}
     # }}}
     # Spelling/grammar {{{
