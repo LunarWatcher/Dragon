@@ -201,6 +201,10 @@ def mainLoop():
                     continue
         elif command == "help":
             print("The valid commands are: search, target")
+            print("target:\t\ttakes a list of IDs for posts to edit")
+            print("search:\t\ttakes search parameters as defined in the API docs: https://api.stackexchange.com/docs/excerpt-search")
+            print("\t\tDragon accepts search parameters in the form of parameter=value. For instance, to search for tags, you'll")
+            print("\t\tuse tagged=write;writing, where the value is formatted according to the API")
             exit(0)
         else:
             print("No such command: {}".format(command))

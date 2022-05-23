@@ -70,10 +70,11 @@ def colorDiff(diff, expand = DRAGON_EXPAND):
 # This should line up with how SE's built-in editor counts changes for <2k users.
 # Either way, it should substantially reduce bare minimum edits.
 def countChanges(post: Post):
+    post.unpackBody()
     if post.isQuestion() and post.tags != post.oldTags:
         # Tags are generally always fine. Tag-related issues outweigh other stuff hard.
         return 600
-    post.unpackBody()
+
     # Checking for critical edits has to be done after unpacking, to make sure post-unpack filters are included.
     if (post.critical):
         return 600
@@ -89,6 +90,7 @@ def countChanges(post: Post):
     return count
 
 def checkPost(post: Post):
+
     post.changes.add("supervised")
     def render(post: Post):
         if post.isQuestion():

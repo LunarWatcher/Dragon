@@ -1,10 +1,15 @@
 # v0.7.0
 
+## Added
+
+* Tag burnination, with current support for [writing] and [write]. Specifics of tag additions here will not be maintained in the changelog
+
 ## Changed
 * Changed to OAuth redirect URL to stackoverflow.com, instead of a hackish system on GitHub
 
 ## Fixed
 * Prevent tags from auto-collapsing
+* Fix bug where tag edits weren't unpacked, resulting in a bad preview
 
 # v0.6.0
 

@@ -351,6 +351,23 @@ def addTags(post: Post):
 
     return count
 
+def tagBurninator(post: Post):
+    if not post.isQuestion():
+        return 0
+
+    tags = [
+        "write", "writing", # https://meta.stackoverflow.com/q/399366/6296561
+    ]
+    count = 0
+
+    for tag in tags:
+        if tag in post.tags:
+            post.tags.remove(tag)
+
+            count += 1
+
+    return count
+
 # }}}
 # Hybrid edits (questions and answers, but contains bits specific to questions) {{{
 def capitalizeSentences(post: Post):
@@ -425,7 +442,8 @@ filters = [
     # }}}
     legalNames, # Needs to be after capitalizeSentences, to make sure trademarks aren't incorrectly capitalized due to their sentence position
 
-
+    
     # Tags, woo!
+    tagBurninator,
     addTags,
 ]
